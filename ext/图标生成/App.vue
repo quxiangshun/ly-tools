@@ -156,7 +156,7 @@
 import { reactive, ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import { renderIcon, createIco } from '../utils/ico.js'
+import { renderIcon, createIco } from './ico.js'
 
 const config = reactive({
   text: 'LY',

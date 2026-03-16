@@ -17,10 +17,10 @@
     <div class="card-grid">
       <el-card
         v-for="item in filteredTools"
-        :key="item.path"
+        :key="item.route"
         shadow="hover"
         class="tool-card"
-        @click="go(item.path)"
+        @click="onCardClick(item)"
       >
         <div class="tool-card-body">
           <div class="tool-icon" :style="{ background: item.color }">
@@ -28,7 +28,7 @@
           </div>
           <div class="tool-text">
             <h3 class="tool-title">{{ item.title }}</h3>
-            <p class="tool-desc">{{ item.desc }}</p>
+            <p class="tool-desc">{{ item.description }}</p>
           </div>
         </div>
       </el-card>
@@ -43,42 +43,34 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
 const router = useRouter()
 const keyword = ref('')
-
-const tools = [
-  {
-    path: '/port-killer',
-    title: '端口查杀',
-    desc: '根据端口号查询并终止占用进程',
-    icon: 'ri:terminal-box-line',
-    color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  },
-  {
-    path: '/icon-generator',
-    title: '图标生成',
-    desc: '文字生成 ICO 图标，支持多尺寸',
-    icon: 'ri:palette-line',
-    color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  },
-]
+const pluginList = inject('pluginList', [])
 
 const filteredTools = computed(() => {
   const k = keyword.value.trim().toLowerCase()
-  if (!k) return tools
-  return tools.filter(
+  if (!k) return pluginList
+  return pluginList.filter(
     (t) =>
       t.title.toLowerCase().includes(k) ||
-      t.desc.toLowerCase().includes(k)
+      (t.description && t.description.toLowerCase().includes(k))
   )
 })
 
-function go(path) {
-  router.push(path)
+function onCardClick(item) {
+  if (item.fullScreen && item.id === 'lock-screen') {
+    if (window.electronAPI?.openLockScreen) {
+      window.electronAPI.openLockScreen()
+    } else {
+      router.push(item.route)
+    }
+    return
+  }
+  router.push(item.route)
 }
 </script>
 
