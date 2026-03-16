@@ -7,4 +7,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => ipcRenderer.invoke('get-platform'),
   openLockScreen: () => ipcRenderer.invoke('open-lock-screen'),
   getPluginList: () => ipcRenderer.invoke('get-plugin-list'),
+  openLobsterWindow: () => ipcRenderer.invoke('open-lobster-window'),
+  closeLobsterWindow: () => ipcRenderer.invoke('close-lobster-window'),
+  sendLobsterState: (state) => ipcRenderer.send('lobster-sync-state', state),
+  onLobsterState: (cb) => {
+    ipcRenderer.on('lobster-state', (_e, state) => cb(state))
+  },
+  requestLobsterState: () => ipcRenderer.send('lobster-request-state'),
+  sendLobsterCrawlDone: (id) => ipcRenderer.send('lobster-crawl-done', id),
+  onLobsterCrawlDone: (cb) => {
+    ipcRenderer.on('lobster-crawl-done', (_e, id) => cb(id))
+  },
 })
