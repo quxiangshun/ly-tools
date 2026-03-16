@@ -4,11 +4,17 @@ import 'element-plus/dist/index.css'
 import App from './App.vue'
 import { createAppRouter, defaultPluginsForWeb } from './router'
 import LobsterApp from '../ext/养龙虾/App.vue'
+import LockScreenLightOffApp from '../ext/锁屏（关灯）/App.vue'
 
 const isLobsterStandalone = typeof window !== 'undefined' && window.location.search.includes('lobster=1')
+const isLightOffStandalone = typeof window !== 'undefined' && window.location.search.includes('lightoff=1')
 
 if (isLobsterStandalone) {
   const app = createApp(LobsterApp, { standalone: true })
+  app.use(ElementPlus)
+  app.mount('#app')
+} else if (isLightOffStandalone) {
+  const app = createApp(LockScreenLightOffApp, { standalone: true })
   app.use(ElementPlus)
   app.mount('#app')
 } else {

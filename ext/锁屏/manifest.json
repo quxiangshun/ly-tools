@@ -1,6 +1,7 @@
 {
   "id": "lock-screen",
   "route": "/lock-screen",
+  "title": "锁屏（win更新）",
   "icon": "ri:lock-line",
   "description": "Windows 更新风格假锁屏，点击右上角 × 退出",
   "color": "linear-gradient(135deg, #0078d4 0%, #106ebe 100%)",

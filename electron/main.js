@@ -6,6 +6,7 @@ const { pathToFileURL } = require('url')
 
 let mainWindow
 let lockWindow = null
+let lightOffWindow = null
 let lobsterWindow = null
 let lastLobsterState = null
 
@@ -69,6 +70,54 @@ function createLockWindow() {
   })
 }
 
+function closeLightOffWindow() {
+  if (lightOffWindow && !lightOffWindow.isDestroyed()) {
+    lightOffWindow.close()
+    lightOffWindow = null
+  }
+}
+
+function createLightOffWindow() {
+  if (lightOffWindow && !lightOffWindow.isDestroyed()) {
+    lightOffWindow.focus()
+    return
+  }
+  const display = screen.getPrimaryDisplay()
+  const { width, height, x, y } = display.bounds
+  lightOffWindow = new BrowserWindow({
+    width,
+    height,
+    x,
+    y,
+    frame: false,
+    fullscreen: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  lightOffWindow.setMenuBarVisibility(false)
+  lightOffWindow.setAlwaysOnTop(true, 'screen-saver')
+  lightOffWindow.on('blur', () => {
+    if (lightOffWindow && !lightOffWindow.isDestroyed()) lightOffWindow.focus()
+  })
+  const lightOffUrl = process.env.VITE_DEV_SERVER_URL
+    ? process.env.VITE_DEV_SERVER_URL + '?lightoff=1'
+    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?lightoff=1'
+  lightOffWindow.loadURL(lightOffUrl)
+  lightOffWindow.on('closed', () => {
+    lightOffWindow = null
+  })
+  lightOffWindow.once('ready-to-show', () => {
+    lightOffWindow.setFullScreen(true)
+    lightOffWindow.setBounds(display.bounds)
+  })
+}
+
 function createLobsterWindow() {
   if (lobsterWindow && !lobsterWindow.isDestroyed()) {
     return
@@ -112,7 +161,7 @@ function createLobsterWindow() {
 }
 
 function getLockScreenHTML() {
-  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/><title>正在准备 Windows 更新</title><style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;font-family:"Segoe UI","Microsoft YaHei",sans-serif}.lock-overlay{position:fixed;inset:0;background:#0078d4;display:flex;align-items:center;justify-content:center}.close-btn{position:absolute;top:20px;right:24px;width:28px;height:28px;border:none;background:transparent;color:rgba(255,255,255,.5);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .2s,color .2s,background .2s;box-shadow:none;opacity:0}.close-btn:hover{opacity:1;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08)}.update-content{text-align:center;color:#fff}.spinner{display:flex;gap:10px;justify-content:center;margin-bottom:32px}.dot{width:12px;height:12px;border-radius:50%;background:#fff;animation:pulse 1.4s ease-in-out infinite both}.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}@keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}.update-title{font-size:28px;font-weight:300;margin:0 0 12px;letter-spacing:.5px}.update-sub{font-size:15px;opacity:.9;margin:0 0 40px;font-weight:300}.progress-bar{width:320px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;overflow:hidden;margin:0 auto}.progress-inner{height:100%;width:30%;background:#fff;border-radius:2px;animation:progress 2s ease-in-out infinite}@keyframes progress{0%{transform:translateX(-100%)}50%{transform:translateX(200%)}100%{transform:translateX(-100%)}}.lock-tip{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.4);font-weight:300}</style></head><body><div class="lock-overlay"><button class="close-btn" title="退出" id="closeBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button><div class="update-content"><div class="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><p class="update-title">正在准备 Windows 更新</p><p class="update-sub">请不要关闭电脑</p><div class="progress-bar"><div class="progress-inner"></div></div></div><p class="lock-tip">使用方式：鼠标移至右上角悬停可显示关闭按钮退出</p></div><script>document.getElementById('closeBtn').onclick=function(){if(window.electronAPI&&typeof window.electronAPI.closeLockWindow==='function')window.electronAPI.closeLockWindow();else window.close();};</script></body></html>`
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"/><title>正在准备 Windows 更新</title><style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;font-family:"Segoe UI","Microsoft YaHei",sans-serif}.lock-overlay{position:fixed;inset:0;background:#0078d4;display:flex;align-items:center;justify-content:center}.close-btn{position:absolute;top:20px;right:24px;width:28px;height:28px;border:none;background:transparent;color:rgba(255,255,255,.5);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .2s,color .2s,background .2s;box-shadow:none;opacity:0}.close-btn:hover{opacity:1;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08)}.update-content{text-align:center;color:#fff}.spinner{display:flex;gap:10px;justify-content:center;margin-bottom:32px}.dot{width:12px;height:12px;border-radius:50%;background:#fff;animation:pulse 1.4s ease-in-out infinite both}.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}@keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}.update-title{font-size:28px;font-weight:300;margin:0 0 12px;letter-spacing:.5px}.update-sub{font-size:15px;opacity:.9;margin:0 0 40px;font-weight:300}.progress-bar{width:320px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;overflow:hidden;margin:0 auto}.progress-inner{height:100%;width:30%;background:#fff;border-radius:2px;animation:progress 2s ease-in-out infinite}@keyframes progress{0%{transform:translateX(-100%)}50%{transform:translateX(200%)}100%{transform:translateX(-100%)}}</style></head><body><div class="lock-overlay"><button class="close-btn" title="退出" id="closeBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button><div class="update-content"><div class="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><p class="update-title">正在准备 Windows 更新</p><p class="update-sub">请不要关闭电脑</p><div class="progress-bar"><div class="progress-inner"></div></div></div></div><script>document.getElementById('closeBtn').onclick=function(){if(window.electronAPI&&typeof window.electronAPI.closeLockWindow==='function')window.electronAPI.closeLockWindow();else window.close();};</script></body></html>`
 }
 
 function createWindow() {
@@ -227,10 +276,10 @@ ipcMain.handle('kill-process', async (_event, pid) => {
   return { success: true, message: stdout || `进程 ${pid} 已终止` }
 })
 
-ipcMain.handle('save-file', async (_event, { defaultName, data }) => {
+ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultName,
-    filters: [{ name: 'ICO 图标', extensions: ['ico'] }],
+    filters: filters || [{ name: 'ICO 图标', extensions: ['ico'] }],
   })
 
   if (!result.canceled && result.filePath) {
@@ -251,7 +300,8 @@ function getExtDir() {
 const DEFAULT_PLUGINS = [
   { dir: '端口查杀', manifest: { id: 'port-killer', route: '/port-killer', icon: 'ri:terminal-box-line', description: '根据端口号查询并终止占用进程', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' } },
   { dir: '图标生成', manifest: { id: 'icon-generator', route: '/icon-generator', icon: 'ri:palette-line', description: '文字生成 ICO 图标，支持多尺寸', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' } },
-  { dir: '锁屏', manifest: { id: 'lock-screen', route: '/lock-screen', icon: 'ri:lock-line', description: 'Windows 更新风格假锁屏，点击右上角 × 退出', color: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)', fullScreen: true } },
+  { dir: '锁屏', manifest: { id: 'lock-screen', route: '/lock-screen', title: '锁屏（win更新）', icon: 'ri:lock-line', description: 'Windows 更新风格假锁屏，点击右上角 × 退出', color: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)', fullScreen: true } },
+  { dir: '锁屏（关灯）', manifest: { id: 'lock-screen-light-off', route: '/lock-screen-light-off', icon: 'ri:lightbulb-flash-line', description: '全黑关灯，中间两只大眼睛，眼球随鼠标转动，简笔画风格，点击退出', color: 'linear-gradient(135deg, #1a1a1a 0%, #000 100%)', fullScreen: true } },
   { dir: '养龙虾', manifest: { id: 'lobster', route: '/lobster', icon: 'ri:restaurant-2-line', description: '点击加号增加龙虾，减号随机杀掉一只，龙虾从屏幕任意位置爬出', color: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)' } },
 ]
 
@@ -295,6 +345,14 @@ ipcMain.handle('open-lock-screen', () => {
 
 ipcMain.handle('close-lock-window', () => {
   closeLockWindow()
+})
+
+ipcMain.handle('open-light-off-window', () => {
+  createLightOffWindow()
+})
+
+ipcMain.handle('close-light-off-window', () => {
+  closeLightOffWindow()
 })
 
 ipcMain.handle('open-lobster-window', () => {

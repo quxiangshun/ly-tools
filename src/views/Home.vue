@@ -28,7 +28,9 @@
           </div>
           <div class="tool-text">
             <h3 class="tool-title">{{ item.title }}</h3>
-            <p class="tool-desc">{{ item.description }}</p>
+            <el-tooltip :content="item.description || ''" placement="top" :show-after="300">
+              <p class="tool-desc">{{ item.description }}</p>
+            </el-tooltip>
           </div>
         </div>
       </el-card>
@@ -65,6 +67,14 @@ function onCardClick(item) {
   if (item.fullScreen && item.id === 'lock-screen') {
     if (window.electronAPI?.openLockScreen) {
       window.electronAPI.openLockScreen()
+    } else {
+      router.push(item.route)
+    }
+    return
+  }
+  if (item.fullScreen && item.id === 'lock-screen-light-off') {
+    if (window.electronAPI?.openLightOffWindow) {
+      window.electronAPI.openLightOffWindow()
     } else {
       router.push(item.route)
     }
@@ -154,6 +164,11 @@ function onCardClick(item) {
   color: #909399;
   margin: 0;
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .empty-tip {

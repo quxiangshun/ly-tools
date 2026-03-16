@@ -1,0 +1,8 @@
+{
+  "id": "lock-screen-light-off",
+  "route": "/lock-screen-light-off",
+  "icon": "ri:lightbulb-flash-line",
+  "description": "全黑关灯，中间两只大眼睛，眼球随鼠标转动，简笔画风格，点击退出",
+  "color": "linear-gradient(135deg, #1a1a1a 0%, #000 100%)",
+  "fullScreen": true
+}
