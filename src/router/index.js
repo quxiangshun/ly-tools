@@ -6,6 +6,8 @@ import LockScreenApp from '../../ext/锁屏（win更新）/App.vue'
 import LockScreenLightOffApp from '../../ext/锁屏（关灯）/App.vue'
 import LobsterApp from '../../ext/养龙虾/App.vue'
 import MathGenApp from '../../ext/加减混合/App.vue'
+import ScreenSaverShatterApp from '../../ext/屏保（碎屏）/App.vue'
+
 const idToComponent = {
   'port-killer': PortKillerApp,
   'icon-generator': IconGeneratorApp,
@@ -13,6 +15,7 @@ const idToComponent = {
   'lock-screen-light-off': LockScreenLightOffApp,
   'lobster': LobsterApp,
   'math-gen': MathGenApp,
+  'screen-saver-shatter': ScreenSaverShatterApp,
 }
 
 function getPluginComponent(id) {

@@ -80,6 +80,10 @@ function onCardClick(item) {
     }
     return
   }
+  if (item.fullScreen && item.id === 'screen-saver-shatter') {
+    router.push(item.route)
+    return
+  }
   router.push(item.route)
 }
 </script>

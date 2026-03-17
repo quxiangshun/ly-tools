@@ -9,6 +9,7 @@ let lockWindow = null
 let lightOffWindow = null
 let lobsterWindow = null
 let lastLobsterState = null
+let shatterWindow = null
 
 function resolveLockPath(filename) {
   const inDir = path.join(__dirname, filename)
@@ -116,6 +117,67 @@ function createLightOffWindow() {
     lightOffWindow.setFullScreen(true)
     lightOffWindow.setBounds(display.bounds)
   })
+}
+
+function closeShatterWindow() {
+  if (shatterWindow && !shatterWindow.isDestroyed()) {
+    shatterWindow.close()
+    shatterWindow = null
+  }
+}
+
+function createShatterWindow() {
+  if (shatterWindow && !shatterWindow.isDestroyed()) {
+    shatterWindow.focus()
+    return
+  }
+  const display = screen.getPrimaryDisplay()
+  const { width, height, x, y } = display.bounds
+  shatterWindow = new BrowserWindow({
+    width,
+    height,
+    x,
+    y,
+    frame: false,
+    fullscreen: true,
+    alwaysOnTop: false,
+    skipTaskbar: true,
+    resizable: false,
+    transparent: true,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  shatterWindow.setMenuBarVisibility(false)
+  shatterWindow.setBackgroundColor('#00000000')
+  const shatterPath = resolveLockPath('shatter-screen.html')
+  shatterWindow.loadFile(shatterPath).catch(() => {
+    shatterWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(getShatterHTML()))
+  })
+  shatterWindow.on('closed', () => {
+    shatterWindow = null
+  })
+  shatterWindow.once('ready-to-show', () => {
+    shatterWindow.setFullScreen(true)
+    shatterWindow.setBounds(display.bounds)
+    shatterWindow.setIgnoreMouseEvents(true, { forward: true })
+  })
+}
+
+function getShatterHTML() {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>*{margin:0;padding:0}html,body{width:100%;height:100%;background:transparent;pointer-events:none}#wrap{pointer-events:none}.shatter-cracks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ih{fill:rgba(0,0,0,.55);filter:url(#hb)}.cg{fill:none;stroke:rgba(0,0,0,.65);stroke-width:.26;stroke-linecap:round;stroke-linejoin:round;filter:url(#gb)}.cl{fill:none;stroke:rgba(255,255,255,.96);stroke-width:.08;stroke-linecap:round;stroke-linejoin:round}.hg{fill:none;stroke:rgba(0,0,0,.5);stroke-width:.12;stroke-linecap:round;stroke-linejoin:round}.hl{fill:none;stroke:rgba(255,255,255,.7);stroke-width:.05;stroke-linecap:round;stroke-linejoin:round}</style></head><body><div id="wrap"><svg class="shatter-cracks" id="svg" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><filter id="hb" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="b"/><feColorMatrix in="b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.85 0"/></filter><filter id="gb" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur in="SourceGraphic" stdDeviation="0.35" result="b"/><feColorMatrix in="b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0"/></filter></defs></svg></div><script>
+function seg(x,y,ang,len,br){var p=[[x,y]],l=0,st=br?0.7:1,mt=br?0.5:0.35,kc=br?0.08:0.06,n=Math.min(br?35:95,Math.ceil(len/st)+5);for(var i=0;i<n&&l<len;i++){if(Math.random()<kc)ang+=(Math.random()-.5)*1.5;ang+=(Math.random()-.5)*mt;var s=st*(0.6+Math.random()*0.85);x+=Math.cos(ang)*s+(Math.random()-.5)*0.85;y+=Math.sin(ang)*s+(Math.random()-.5)*0.85;l+=s;p.push([x,y]);}return p;}
+function toD(p){if(p.length<2)return '';var d='M '+p[0][0].toFixed(3)+' '+p[0][1].toFixed(3);for(var i=1;i<p.length;i++)d+=' L '+p[i][0].toFixed(3)+' '+p[i][1].toFixed(3);return d;}
+var cx=50+(Math.random()-.5)*3,cy=50+(Math.random()-.5)*3,svg=document.getElementById('svg');
+var hp=7+Math.floor(Math.random()*4),holeD='';for(var i=0;i<hp;i++){var a=(i/hp)*6.28+Math.random()*0.5,r=2.2+Math.random()*2.5;holeD+=(i?' L ':'M ')+(cx+Math.cos(a)*r).toFixed(2)+' '+(cy+Math.sin(a)*r).toFixed(2);}
+var hole=document.createElementNS('http://www.w3.org/2000/svg','path');hole.setAttribute('class','ih');hole.setAttribute('d',holeD+' Z');svg.appendChild(hole);
+var paths=[],n=8+Math.floor(Math.random()*5);for(var i=0;i<n;i++){var a=(i/n)*360+(Math.random()-.5)*20,r=a*0.01745,tl=48+Math.random()*24,pts=seg(cx,cy,r,tl,false);paths.push(toD(pts));if(pts.length>=4&&Math.random()<0.55){var idx=2+Math.floor(Math.random()*(pts.length-4)),bx=pts[idx][0],by=pts[idx][1],bl=10+Math.random()*18;paths.push(toD(seg(bx,by,r+(Math.random()-.5)*2,bl,true)));}}
+paths.forEach(function(d){var g=document.createElementNS('http://www.w3.org/2000/svg','path');g.setAttribute('class','cg');g.setAttribute('d',d);svg.appendChild(g);var l=document.createElementNS('http://www.w3.org/2000/svg','path');l.setAttribute('class','cl');l.setAttribute('d',d);svg.appendChild(l);});
+for(var h=0;h<6+Math.floor(Math.random()*6);h++){var fromC=Math.random()<0.5,sx=fromC?cx+(Math.random()-.5)*6:cx+(Math.random()-.5)*50,sy=fromC?cy+(Math.random()-.5)*6:cy+(Math.random()-.5)*50,ha=Math.random()*6.28,hp2=seg(sx,sy,ha,5+Math.random()*13,true);if(hp2.length<2)continue;var hd=toD(hp2);var hg=document.createElementNS('http://www.w3.org/2000/svg','path');hg.setAttribute('class','hg');hg.setAttribute('d',hd);svg.appendChild(hg);var hl=document.createElementNS('http://www.w3.org/2000/svg','path');hl.setAttribute('class','hl');hl.setAttribute('d',hd);svg.appendChild(hl);}
+<\/script></body></html>`
 }
 
 function createLobsterWindow() {
@@ -302,6 +364,7 @@ const DEFAULT_PLUGINS = [
   { dir: '图标生成', manifest: { id: 'icon-generator', route: '/icon-generator', icon: 'ri:palette-line', description: '文字生成 ICO 图标，支持多尺寸', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' } },
   { dir: '锁屏（win更新）', manifest: { id: 'lock-screen', route: '/lock-screen', title: '锁屏（win更新）', icon: 'ri:lock-line', description: 'Windows 更新风格假锁屏，点击右上角 × 退出', color: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)', fullScreen: true } },
   { dir: '锁屏（关灯）', manifest: { id: 'lock-screen-light-off', route: '/lock-screen-light-off', icon: 'ri:lightbulb-flash-line', description: '全黑关灯，中间两只大眼睛，眼球随鼠标转动，简笔画风格，点击退出', color: 'linear-gradient(135deg, #1a1a1a 0%, #000 100%)', fullScreen: true } },
+  { dir: '屏保（碎屏）', manifest: { id: 'screen-saver-shatter', route: '/screen-saver-shatter', title: '屏保（碎屏）', icon: 'ri:fullscreen-exit-line', description: '点击后桌面呈现碎屏效果，点击任意处退出', color: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)', fullScreen: true } },
   { dir: '养龙虾', manifest: { id: 'lobster', route: '/lobster', icon: 'ri:restaurant-2-line', description: '点击加号增加龙虾，减号随机杀掉一只，龙虾从屏幕任意位置爬出', color: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)' } },
 ]
 
@@ -353,6 +416,14 @@ ipcMain.handle('open-light-off-window', () => {
 
 ipcMain.handle('close-light-off-window', () => {
   closeLightOffWindow()
+})
+
+ipcMain.handle('open-shatter-window', () => {
+  createShatterWindow()
+})
+
+ipcMain.handle('close-shatter-window', () => {
+  closeShatterWindow()
 })
 
 ipcMain.handle('open-lobster-window', () => {
