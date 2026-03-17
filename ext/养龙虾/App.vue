@@ -12,7 +12,7 @@
         :style="lobsterStyle(item)"
         @transitionend="onLobsterTransitionEnd(item)"
       >
-        <span class="lobster-emoji" :style="{ fontSize: item.size + 'px' }">🦞</span>
+        <span class="lobster-emoji" :style="{ fontSize: item.size + 'px' }">{{ getEmoji(item) }}</span>
       </div>
     </div>
 
@@ -32,6 +32,18 @@
           <Icon icon="ri:subtract-line" :width="24" />
           <span>减一只</span>
         </el-button>
+        <div class="creature-setting">
+          <span class="size-label">种类</span>
+          <el-radio-group v-model="selectedCreatureId" size="large" class="creature-radio">
+            <el-radio-button
+              v-for="c in CREATURES"
+              :key="c.id"
+              :value="c.id"
+            >
+              <span class="creature-radio-label">{{ c.emoji }} {{ c.name }}</span>
+            </el-radio-button>
+          </el-radio-group>
+        </div>
         <div class="size-setting">
           <span class="size-label">大小</span>
           <el-slider v-model="lobsterSize" :min="5" :max="200" :step="1" :show-tooltip="true" style="width: 120px;" />
@@ -55,9 +67,23 @@ const isElectron = typeof window !== 'undefined' && window.electronAPI
 const controlsOnly = computed(() => !props.standalone && isElectron)
 const lobsterCount = computed(() => lobsters.value.length)
 
+const CREATURES = [
+  { id: 'lobster', name: '龙虾', emoji: '🦞' },
+  { id: 'octopus', name: '八爪鱼', emoji: '🐙' },
+  { id: 'whale', name: '鲸鱼', emoji: '🐋' },
+  { id: 'dolphin', name: '海豚', emoji: '🐬' },
+  { id: 'fish', name: '鱼', emoji: '🐟' },
+  { id: 'shark', name: '鲨鱼', emoji: '🦈' },
+  { id: 'turtle', name: '海龟', emoji: '🐢' },
+  { id: 'crab', name: '螃蟹', emoji: '🦀' },
+  { id: 'squid', name: '乌贼', emoji: '🦑' },
+  { id: 'seal', name: '海豹', emoji: '🦭' },
+]
+
 const poolRef = ref(null)
 const lobsters = ref([])
 const lobsterSize = ref(48)
+const selectedCreatureId = ref('lobster')
 const displayPositions = ref({})
 const wanderTargets = ref({})
 let idCounter = 0
@@ -65,6 +91,15 @@ let wanderTimer = null
 let killTimeout = null
 let standaloneWanderTimer = null
 let crawlDoneFallbackTimers = []
+
+function getCreature(id) {
+  return CREATURES.find((c) => c.id === id) || CREATURES[0]
+}
+
+function getEmoji(item) {
+  const id = item.creatureType || 'lobster'
+  return getCreature(id).emoji
+}
 
 function getRandom(min, max) {
   return Math.random() * (max - min) + min
@@ -103,7 +138,8 @@ function lobsterStyle(item) {
     if (t && (t.left !== left || t.top !== top)) {
       const dx = t.left - left
       const dy = t.top - top
-      const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+      const moveAngle = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+      const angleDeg = item.creatureType === 'crab' ? moveAngle + 90 : moveAngle
       transform = `rotate(${angleDeg}deg)`
     }
   }
@@ -127,6 +163,7 @@ function addLobster() {
     targetLeft,
     targetTop,
     size: lobsterSize.value,
+    creatureType: selectedCreatureId.value,
     killing: false,
     crawled: false,
   })
@@ -178,6 +215,7 @@ function syncState() {
   window.electronAPI.sendLobsterState({
     lobsters: lobsters.value.map((l) => ({ ...l })),
     lobsterSize: lobsterSize.value,
+    selectedCreatureId: selectedCreatureId.value,
   })
 }
 
@@ -204,6 +242,7 @@ onMounted(() => {
           return { ...l }
         })
         lobsterSize.value = state.lobsterSize ?? 48
+        if (state.selectedCreatureId) selectedCreatureId.value = state.selectedCreatureId
         const nextPositions = { ...displayPositions.value }
         const nextTargets = { ...wanderTargets.value }
         const stateIds = new Set(state.lobsters.map((l) => Number(l.id)))
@@ -370,10 +409,11 @@ onUnmounted(() => {
 }
 
 .lobster-controls-only .float-bar {
-  position: relative;
-  margin-top: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   bottom: auto;
-  border-top: 1px solid #ebeef5;
 }
 
 .lobster-standalone {
@@ -427,7 +467,7 @@ onUnmounted(() => {
   top: 49px;
   left: 0;
   right: 0;
-  bottom: 80px;
+  bottom: 0;
   overflow: hidden;
   background: linear-gradient(180deg, #e8f4f8 0%, #d4e9f0 50%, #c5e0eb 100%);
 }
@@ -445,6 +485,12 @@ onUnmounted(() => {
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
   pointer-events: none;
+  animation: creature-float 2.5s ease-in-out infinite;
+}
+
+@keyframes creature-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.05); }
 }
 
 .lobster-crawl-in {
@@ -455,23 +501,24 @@ onUnmounted(() => {
   transition: left 0.18s ease-out, top 0.18s ease-out, transform 0.15s ease-out;
 }
 
+.lobster-dying .lobster-emoji {
+  animation: none;
+}
+
 .lobster-dying {
   transition: opacity 0.9s ease-out, transform 0.9s ease-out;
   opacity: 0;
   transform: scale(0);
 }
 
-/* 固定在底部的操作栏 */
+/* 窗口中间的操作栏：加一只、减一只、大小等 */
 .float-bar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 10;
-  padding: 14px 20px 20px;
-  background: #fff;
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
-  border-top: 2px solid #e74c3c;
+  padding: 14px 0;
 }
 
 .float-bar-inner {
@@ -500,6 +547,21 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   padding: 12px 24px;
+}
+
+.creature-setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.creature-radio {
+  flex-wrap: wrap;
+}
+
+.creature-radio-label {
+  font-size: 14px;
 }
 
 .size-setting {
