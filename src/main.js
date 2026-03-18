@@ -3,8 +3,8 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
 import { createAppRouter, defaultPluginsForWeb } from './router'
-import LobsterApp from '../ext/养龙虾/App.vue'
-import LockScreenLightOffApp from '../ext/锁屏（关灯）/App.vue'
+import LobsterApp from '../plugins/养龙虾/App.vue'
+import LockScreenLightOffApp from '../plugins/锁屏（关灯）/App.vue'
 
 const isLobsterStandalone = typeof window !== 'undefined' && window.location.search.includes('lobster=1')
 const isLightOffStandalone = typeof window !== 'undefined' && window.location.search.includes('lightoff=1')

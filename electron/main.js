@@ -354,7 +354,9 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
 ipcMain.handle('get-platform', () => process.platform)
 
 function getExtDir() {
-  const extDir = path.join(app.getAppPath(), 'ext')
+  const extDir = app.isPackaged
+    ? path.join(require('os').homedir(), 'tools', 'plugins')
+    : path.join(__dirname, '..', 'plugins')
   if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true })
   return extDir
 }

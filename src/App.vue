@@ -8,7 +8,7 @@
           <template #content>
             <div class="plugin-tip-content">
               <div class="plugin-tip-title">插件开发说明</div>
-              <p>1. 在安装目录下 <code>ext</code> 文件夹中，以插件标题为名新建文件夹；</p>
+              <p>1. 在安装目录下 <code>plugins</code> 文件夹中，以插件标题为名新建文件夹；</p>
               <p>2. 在文件夹内添加 <code>manifest.json</code>，包含：id、route、icon、description、color，可选 fullScreen；</p>
               <p>3. 在文件夹内添加 <code>App.vue</code> 作为插件入口组件；</p>
               <p>4. 删除对应文件夹即可卸载该插件。</p>
