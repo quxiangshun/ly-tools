@@ -3,20 +3,36 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
 import { createAppRouter, defaultPluginsForWeb } from './router'
-import LobsterApp from '../plugins/养龙虾/App.vue'
-import LockScreenLightOffApp from '../plugins/锁屏（关灯）/App.vue'
 
-const isLobsterStandalone = typeof window !== 'undefined' && window.location.search.includes('lobster=1')
-const isLightOffStandalone = typeof window !== 'undefined' && window.location.search.includes('lightoff=1')
+// standalone 窗口通过 URL 参数选择插件，与 router 一致用 glob 动态加载，不写死 import
+const standaloneModules = import.meta.glob('../plugins/*/App.vue')
+const standaloneQueryToDir = { lobster: '养龙虾', lightoff: '锁屏（关灯）' }
 
-if (isLobsterStandalone) {
-  const app = createApp(LobsterApp, { standalone: true })
-  app.use(ElementPlus)
-  app.mount('#app')
-} else if (isLightOffStandalone) {
-  const app = createApp(LockScreenLightOffApp, { standalone: true })
-  app.use(ElementPlus)
-  app.mount('#app')
+function getStandalonePluginDir() {
+  if (typeof window === 'undefined') return null
+  const q = new URLSearchParams(window.location.search)
+  for (const [param, pluginDir] of Object.entries(standaloneQueryToDir)) {
+    if (q.get(param) === '1') return pluginDir
+  }
+  return null
+}
+
+const standalonePluginDir = getStandalonePluginDir()
+
+if (standalonePluginDir) {
+  const key = `../plugins/${standalonePluginDir}/App.vue`
+  const load = standaloneModules[key]
+  if (load) {
+    load().then((m) => {
+      const app = createApp(m.default, { standalone: true })
+      app.use(ElementPlus)
+      app.mount('#app')
+    })
+  } else {
+    const app = createApp(App)
+    app.use(ElementPlus)
+    app.mount('#app')
+  }
 } else {
   async function init() {
     const pluginList = window.electronAPI
