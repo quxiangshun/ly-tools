@@ -4,6 +4,28 @@ const path = require('path')
 const fs = require('fs')
 const { pathToFileURL } = require('url')
 
+function getAppVersion() {
+  if (app.isPackaged) return app.getVersion()
+  try {
+    const pkg = require(path.join(__dirname, '..', 'package.json'))
+    return pkg.version || '0.0.0'
+  } catch (_) {
+    return '0.0.0'
+  }
+}
+
+function semverGte(a, b) {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const va = pa[i] || 0
+    const vb = pb[i] || 0
+    if (va > vb) return true
+    if (va < vb) return false
+  }
+  return true
+}
+
 let mainWindow
 let lockWindow = null
 let lightOffWindow = null
@@ -329,7 +351,7 @@ ipcMain.handle('get-platform', () => process.platform)
 
 function getExtDir() {
   const extDir = app.isPackaged
-    ? path.join(require('os').homedir(), 'tools', 'plugins')
+    ? path.join(require('os').homedir(), '.ly', 'tools', 'plugins')
     : path.join(__dirname, '..', 'plugins')
   if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true })
   return extDir
@@ -348,6 +370,17 @@ function getPluginList() {
       try {
         const raw = fs.readFileSync(manifestPath, 'utf-8')
         const manifest = JSON.parse(raw)
+        const minVer = manifest.minLyToolsVersion
+        if (minVer && !semverGte(getAppVersion(), minVer)) continue
+        const supportedOS = manifest.supportedOS
+        if (!Array.isArray(supportedOS) || supportedOS.length === 0) continue
+        const platform = process.platform
+        const normalized = supportedOS.map((s) =>
+          String(s).toLowerCase()
+            .replace(/^windows$|^win64$/, 'win32')
+            .replace(/^macos?$/, 'darwin')
+        )
+        if (!normalized.includes(platform)) continue
         list.push({ pluginDir, title: manifest.title ?? pluginDir, ...manifest })
       } catch (_) {}
     }

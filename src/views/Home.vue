@@ -23,8 +23,11 @@
         @click="onCardClick(item)"
       >
         <div class="tool-card-body">
-          <div class="tool-icon" :style="{ background: item.color }">
-            <Icon :icon="item.icon" :width="24" />
+          <div class="tool-icon-wrap">
+            <div class="tool-icon" :style="{ background: item.color }">
+              <Icon :icon="item.icon" :width="24" />
+            </div>
+            <span v-if="item.version" class="tool-version">v{{ item.version }}</span>
           </div>
           <div class="tool-text">
             <h3 class="tool-title">{{ item.title }}</h3>
@@ -139,8 +142,15 @@ function onCardClick(item) {
   gap: 14px;
 }
 
-.tool-icon {
+.tool-icon-wrap {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-icon {
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -161,6 +171,12 @@ function onCardClick(item) {
   color: #303133;
   margin: 0 0 4px 0;
   font-weight: 600;
+}
+
+.tool-version {
+  font-size: 10px;
+  font-weight: 400;
+  color: #909399;
 }
 
 .tool-desc {

@@ -3,5 +3,7 @@
   "route": "/port-killer",
   "icon": "ri:terminal-box-line",
   "description": "根据端口号查询并终止占用进程",
-  "color": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+  "color": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+  "version": "1.0.0",
+  "supportedOS": ["win64", "linux"]
 }
