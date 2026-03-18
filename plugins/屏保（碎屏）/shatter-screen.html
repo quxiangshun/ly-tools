@@ -62,7 +62,6 @@
       const centerY = 50 + (Math.random() - 0.5) * 3
       const svg = document.getElementById('cracks')
 
-      // 中心撞击窟窿：不规则多边形
       const holePoints = 7 + Math.floor(Math.random() * 4)
       let holeD = ''
       for (let i = 0; i < holePoints; i++) {
@@ -96,7 +95,6 @@
         }
       }
 
-      // 主裂纹：只画凹槽 + 高光两道，对比强
       paths.forEach(function (path, i) {
         const groove = document.createElementNS('http://www.w3.org/2000/svg', 'path')
         groove.setAttribute('class', 'crack-groove')
@@ -109,7 +107,6 @@
         svg.appendChild(line)
       })
 
-      // 细碎发丝裂纹：从主裂纹或中心附近发出，延伸更远
       const hairCount = 6 + Math.floor(Math.random() * 6)
       for (let h = 0; h < hairCount; h++) {
         const fromCenter = Math.random() < 0.5
