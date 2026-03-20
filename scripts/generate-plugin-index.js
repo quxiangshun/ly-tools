@@ -43,7 +43,7 @@ function parseZipLinks(html) {
 
 function getLocalPluginTitles() {
   const dirs = [
-    path.join(__dirname, '..', 'plugins-ext'),
+    path.join(__dirname, '..', 'plugins'),
     path.join(os.homedir(), '.ly', 'tools', 'plugins'),
   ]
   const map = {}

@@ -16,7 +16,7 @@ export function exposePluginHost() {
 
 function loadPluginCss(pluginDir) {
   const encoded = encodeURIComponent(pluginDir)
-  const url = `ly-plugin://${encoded}/style.css`
+  const url = `ly-plugin://plugin/${encoded}/style.css`
   const link = document.createElement('link')
   link.rel = 'stylesheet'
   link.href = url
@@ -56,6 +56,6 @@ export async function loadPluginComponentById(pluginId) {
   if (!window.electronAPI?.getPluginEntryUrlById) return null
   const url = await window.electronAPI.getPluginEntryUrlById(pluginId)
   if (!url) return null
-  const pluginDir = url.match(/ly-plugin:\/\/([^/]+)\//)?.[1]
+  const pluginDir = url.match(/ly-plugin:\/\/[^/]+\/([^/]+)\//)?.[1]
   return loadPluginByUrl(url, pluginDir ? decodeURIComponent(pluginDir) : null)
 }

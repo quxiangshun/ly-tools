@@ -312,10 +312,11 @@ app.whenReady().then(() => {
   protocol.handle('ly-plugin', (request) => {
     try {
       const u = new URL(request.url)
-      const pathname = decodeURIComponent(u.pathname)
-      const match = pathname.match(/^\/([^/]+)\/(.+)$/)
-      if (!match) return new Response('Not Found', { status: 404 })
-      const [, pluginDir, file] = match
+      const parts = (u.pathname || '').split('/').filter(Boolean)
+      if (parts.length < 2) return new Response('Not Found', { status: 404 })
+      const pluginDir = decodeURIComponent(parts[0])
+      const file = parts.slice(1).join('/') || 'App.js'
+      if (!pluginDir || !file) return new Response('Not Found', { status: 404 })
       const pluginsRoot = getExtDir()
       const filePath = path.join(pluginsRoot, pluginDir, file)
       if (!filePath.startsWith(pluginsRoot) || !fs.existsSync(filePath)) {
@@ -323,7 +324,8 @@ app.whenReady().then(() => {
       }
       const content = fs.readFileSync(filePath)
       const ext = path.extname(file).toLowerCase()
-      const mime = ext === '.js' ? 'application/javascript' : ext === '.json' ? 'application/json' : 'text/plain'
+      const mimeMap = { '.js': 'application/javascript', '.json': 'application/json', '.css': 'text/css' }
+      const mime = mimeMap[ext] || 'text/plain'
       return new Response(content, { headers: { 'Content-Type': mime } })
     } catch (_) {
       return new Response('Error', { status: 500 })
@@ -441,11 +443,11 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
 
 ipcMain.handle('get-platform', () => process.platform)
 
-// 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins-ext
+// 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins（build:plugins 从 plugins-ext 构建输出到此）
 function getExtDir() {
   const extDir = app.isPackaged
     ? path.join(require('os').homedir(), '.ly', 'tools', 'plugins')
-    : path.join(__dirname, '..', 'plugins-ext')
+    : path.join(__dirname, '..', 'plugins')
   if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true })
   return extDir
 }
@@ -527,7 +529,7 @@ ipcMain.handle('get-plugin-entry-url', (_event, pluginDir) => {
   const appJs = path.join(dir, 'App.js')
   if (!fs.existsSync(appJs)) return null
   const encoded = encodeURIComponent(pluginDir)
-  return `ly-plugin://${encoded}/App.js`
+  return `ly-plugin://plugin/${encoded}/App.js`
 })
 
 ipcMain.handle('get-plugin-entry-url-by-id', (_event, pluginId) => {
@@ -535,7 +537,7 @@ ipcMain.handle('get-plugin-entry-url-by-id', (_event, pluginId) => {
   if (!pluginDir) return null
   const pluginsRoot = getExtDir()
   const appJs = path.join(pluginsRoot, pluginDir, 'App.js')
-  return fs.existsSync(appJs) ? `ly-plugin://${encodeURIComponent(pluginDir)}/App.js` : null
+  return fs.existsSync(appJs) ? `ly-plugin://plugin/${encodeURIComponent(pluginDir)}/App.js` : null
 })
 
 ipcMain.handle('uninstall-plugin', (_event, pluginDir) => {
@@ -672,7 +674,7 @@ function decodePluginDirName(raw) {
   }
 }
 
-// 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins-ext，打包后=~/.ly/tools/plugins）
+// 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins，打包后=~/.ly/tools/plugins）
 ipcMain.handle('install-plugin-from-market', async (_event, filename) => {
   const appRoot = path.join(__dirname, '..')
   const AdmZip = require(path.join(appRoot, 'node_modules', 'adm-zip'))
