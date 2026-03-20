@@ -1,15 +1,15 @@
 /**
- * 构建插件：将 plugins 下各目录的 App.vue 编译为 App.js（UMD）
- * 主程序不依赖 plugins 源码，插件在运行时从插件目录加载
+ * 构建插件：将 plugins-ext 下各目录的 App.vue 编译为 App.js（UMD）
+ * 主程序不依赖 plugins-ext 源码，插件在运行时从插件目录加载
  */
 const path = require('path')
 const fs = require('fs')
 const { build } = require('vite')
 const vue = require('@vitejs/plugin-vue')
 
-const pluginsRoot = path.join(__dirname, '..', 'plugins')
+const pluginsRoot = path.join(__dirname, '..', 'plugins-ext')
 if (!fs.existsSync(pluginsRoot)) {
-  console.log('plugins 目录不存在，跳过')
+  console.log('plugins-ext 目录不存在，跳过')
   process.exit(0)
 }
 const dirs = fs.readdirSync(pluginsRoot, { withFileTypes: true })

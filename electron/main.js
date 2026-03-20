@@ -441,11 +441,11 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
 
 ipcMain.handle('get-platform', () => process.platform)
 
-// 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins
+// 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins-ext
 function getExtDir() {
   const extDir = app.isPackaged
     ? path.join(require('os').homedir(), '.ly', 'tools', 'plugins')
-    : path.join(__dirname, '..', 'plugins')
+    : path.join(__dirname, '..', 'plugins-ext')
   if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true })
   return extDir
 }
@@ -672,7 +672,7 @@ function decodePluginDirName(raw) {
   }
 }
 
-// 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins，打包后=~/.ly/tools/plugins）
+// 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins-ext，打包后=~/.ly/tools/plugins）
 ipcMain.handle('install-plugin-from-market', async (_event, filename) => {
   const appRoot = path.join(__dirname, '..')
   const AdmZip = require(path.join(appRoot, 'node_modules', 'adm-zip'))
