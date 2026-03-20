@@ -6,6 +6,7 @@
   "license": "AGPL-3.0",
   "main": "dist-electron/main.js",
   "build": {
+    "afterPack": "scripts/afterPack.js",
     "productName": "栾媛小工具",
     "icon": "build/icon.ico",
     "directories": {
@@ -26,11 +27,12 @@
       "createStartMenuShortcut": true,
       "shortcutName": "栾媛小工具",
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "uninstallerIcon": "build/icon.ico",
+      "include": "nsis/installer.nsh"
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/build-icon.js && vite",
     "build": "node scripts/build-icon.js && vite build && node -e \"require('fs').copyFileSync('build/icon.ico','dist/icon.ico')\" && electron-builder && node scripts/apply-exe-icon.mjs",
     "preview": "vite preview",
     "generate:index": "node scripts/generate-plugin-index.js"

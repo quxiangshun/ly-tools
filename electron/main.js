@@ -3,7 +3,7 @@
  * Copyright (C) 2025 屈想顺
  * Licensed under AGPL-3.0
  */
-const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu } = require('electron')
 const { exec } = require('child_process')
 const path = require('path')
 const fs = require('fs')
@@ -13,6 +13,21 @@ const https = require('https')
 const { pathToFileURL } = require('url')
 
 const PLUGIN_MARKET_BASE = 'http://39.106.39.125:9999/tools/plugins/'
+
+function getWindowIconPath() {
+  const root = path.join(__dirname, '..')
+  if (process.platform === 'win32') {
+    const icoPath = app.isPackaged
+      ? path.join(root, 'dist', 'icon.ico')
+      : path.join(root, 'build', 'icon.ico')
+    if (fs.existsSync(icoPath)) return icoPath
+    return path.join(root, 'public', 'icon-512.png')
+  }
+  const pngPath = app.isPackaged
+    ? path.join(root, 'dist', 'icon-512.png')
+    : path.join(root, 'public', 'icon-512.png')
+  return fs.existsSync(pngPath) ? pngPath : path.join(root, 'public', 'icon-512.png')
+}
 
 function getAppVersion() {
   if (app.isPackaged) return app.getVersion()
@@ -37,6 +52,7 @@ function semverGte(a, b) {
 }
 
 let mainWindow
+let tray = null
 let lockWindow = null
 let lightOffWindow = null
 let lobsterWindow = null
@@ -244,9 +260,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    icon: app.isPackaged
-      ? path.join(__dirname, process.platform === 'win32' ? '../dist/icon.ico' : '../dist/icon-512.png')
-      : path.join(__dirname, '../public/icon-512.png'),
+    icon: getWindowIconPath(),
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -254,19 +268,56 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
+
+  mainWindow.on('close', (e) => {
+    if (!app.isQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+    }
+  })
 }
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId(app.isPackaged ? 'com.ly-tools' : 'com.ly-tools.dev')
+}
+
+function createTray() {
+  if (tray) return
+  const iconPath = getWindowIconPath()
+  tray = new Tray(iconPath)
+  tray.setToolTip('栾媛小工具')
+  tray.on('click', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+    }
+  })
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: '显示', click: () => { mainWindow && !mainWindow.isDestroyed() && mainWindow.show() } },
+    { type: 'separator' },
+    { label: '退出', click: () => { app.isQuitting = true; app.quit() } },
+  ]))
+}
+
+app.isQuitting = false
 
 app.whenReady().then(() => {
   migrateEncodedPluginDirs()
   createWindow()
+  createTray()
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin' && !tray) app.quit()
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+  } else if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
 })
 
 function execPromise(cmd) {
