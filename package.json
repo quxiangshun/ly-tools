@@ -32,8 +32,9 @@
     }
   },
   "scripts": {
-    "dev": "node scripts/build-icon.js && vite",
-    "build": "node scripts/build-icon.js && vite build && node -e \"require('fs').copyFileSync('build/icon.ico','dist/icon.ico')\" && electron-builder && node scripts/apply-exe-icon.mjs",
+    "dev": "node scripts/build-icon.js && node scripts/build-plugins.js && vite",
+    "build": "node scripts/build-icon.js && node scripts/build-plugins.js && vite build && node -e \"require('fs').copyFileSync('build/icon.ico','dist/icon.ico')\" && electron-builder && node scripts/apply-exe-icon.mjs",
+    "build:plugins": "node scripts/build-plugins.js",
     "preview": "vite preview",
     "generate:index": "node scripts/generate-plugin-index.js"
   },

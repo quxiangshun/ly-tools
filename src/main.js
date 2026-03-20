@@ -8,36 +8,34 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
 import { createAppRouter, defaultPluginsForWeb, getPluginComponentLoader } from './router'
+import { exposePluginHost, loadPluginComponentById } from './plugin-loader'
 
-// standalone 窗口通过 URL 参数选择插件，与 router 一致用 glob 动态加载，不写死 import
-const standaloneModules = import.meta.glob('../plugins/*/App.vue')
-const standaloneQueryToDir = { lobster: '养龙虾', lightoff: '锁屏（关灯）' }
+exposePluginHost()
 
-function getStandalonePluginDir() {
+// standalone 窗口：通过 URL ?pluginId=xxx 加载指定插件（如养龙虾、关灯）
+function getStandalonePluginId() {
   if (typeof window === 'undefined') return null
-  const q = new URLSearchParams(window.location.search)
-  for (const [param, pluginDir] of Object.entries(standaloneQueryToDir)) {
-    if (q.get(param) === '1') return pluginDir
-  }
-  return null
+  return new URLSearchParams(window.location.search).get('pluginId')
 }
 
-const standalonePluginDir = getStandalonePluginDir()
+const standalonePluginId = getStandalonePluginId()
 
-if (standalonePluginDir) {
-  const key = `../plugins/${standalonePluginDir}/App.vue`
-  const load = standaloneModules[key]
-  if (load) {
-    load().then((m) => {
-      const app = createApp(m.default, { standalone: true })
+if (standalonePluginId) {
+  loadPluginComponentById(standalonePluginId).then((comp) => {
+    if (comp) {
+      const app = createApp(comp, { standalone: true })
       app.use(ElementPlus)
       app.mount('#app')
-    })
-  } else {
+    } else {
+      const app = createApp(App)
+      app.use(ElementPlus)
+      app.mount('#app')
+    }
+  }).catch(() => {
     const app = createApp(App)
     app.use(ElementPlus)
     app.mount('#app')
-  }
+  })
 } else {
   const pluginState = reactive({ list: [] })
 
@@ -46,11 +44,15 @@ if (standalonePluginDir) {
       ? await window.electronAPI.getPluginList()
       : defaultPluginsForWeb
     const oldIds = new Set(pluginState.list.map((p) => p.id))
+    const newIds = new Set(list.map((p) => p.id))
     pluginState.list = list
     const router = window.__LY_TOOLS_ROUTER__
     if (router) {
+      for (const id of oldIds) {
+        if (!newIds.has(id)) router.removeRoute(id)
+      }
       for (const p of list) {
-        if (!oldIds.has(p.id) && p.pluginDir && getPluginComponentLoader(p.pluginDir)) {
+        if (!oldIds.has(p.id) && p.pluginDir) {
           router.addRoute({
             path: p.route,
             name: p.id,

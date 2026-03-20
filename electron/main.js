@@ -3,7 +3,7 @@
  * Copyright (C) 2025 屈想顺
  * Licensed under AGPL-3.0
  */
-const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu, protocol } = require('electron')
 const { exec } = require('child_process')
 const path = require('path')
 const fs = require('fs')
@@ -147,8 +147,8 @@ function createLightOffWindow() {
     if (lightOffWindow && !lightOffWindow.isDestroyed()) lightOffWindow.focus()
   })
   const lightOffUrl = process.env.VITE_DEV_SERVER_URL
-    ? process.env.VITE_DEV_SERVER_URL + '?lightoff=1'
-    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?lightoff=1'
+    ? process.env.VITE_DEV_SERVER_URL + '?pluginId=lock-screen-light-off'
+    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?pluginId=lock-screen-light-off'
   lightOffWindow.loadURL(lightOffUrl)
   lightOffWindow.on('closed', () => {
     lightOffWindow = null
@@ -231,8 +231,8 @@ function createLobsterWindow() {
   })
   lobsterWindow.setMenuBarVisibility(false)
   const lobsterUrl = process.env.VITE_DEV_SERVER_URL
-    ? process.env.VITE_DEV_SERVER_URL + '?lobster=1'
-    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?lobster=1'
+    ? process.env.VITE_DEV_SERVER_URL + '?pluginId=lobster'
+    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?pluginId=lobster'
   lobsterWindow.loadURL(lobsterUrl)
   lobsterWindow.on('closed', () => {
     lobsterWindow = null
@@ -281,6 +281,11 @@ if (process.platform === 'win32') {
   app.setAppUserModelId(app.isPackaged ? 'com.ly-tools' : 'com.ly-tools.dev')
 }
 
+// 自定义协议 ly-plugin:// 用于运行时加载插件，主程序不依赖 plugins 源码
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'ly-plugin', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+])
+
 function createTray() {
   if (tray) return
   const iconPath = getWindowIconPath()
@@ -303,6 +308,27 @@ app.isQuitting = false
 
 app.whenReady().then(() => {
   migrateEncodedPluginDirs()
+  // 注册 ly-plugin:// 协议，从插件目录提供 App.js
+  protocol.handle('ly-plugin', (request) => {
+    try {
+      const u = new URL(request.url)
+      const pathname = decodeURIComponent(u.pathname)
+      const match = pathname.match(/^\/([^/]+)\/(.+)$/)
+      if (!match) return new Response('Not Found', { status: 404 })
+      const [, pluginDir, file] = match
+      const pluginsRoot = getExtDir()
+      const filePath = path.join(pluginsRoot, pluginDir, file)
+      if (!filePath.startsWith(pluginsRoot) || !fs.existsSync(filePath)) {
+        return new Response('Not Found', { status: 404 })
+      }
+      const content = fs.readFileSync(filePath)
+      const ext = path.extname(file).toLowerCase()
+      const mime = ext === '.js' ? 'application/javascript' : ext === '.json' ? 'application/json' : 'text/plain'
+      return new Response(content, { headers: { 'Content-Type': mime } })
+    } catch (_) {
+      return new Response('Error', { status: 500 })
+    }
+  })
   createWindow()
   createTray()
 })
@@ -494,6 +520,37 @@ function getPluginDirById(pluginId) {
 }
 
 ipcMain.handle('get-plugin-list', () => getPluginList())
+
+ipcMain.handle('get-plugin-entry-url', (_event, pluginDir) => {
+  const pluginsRoot = getExtDir()
+  const dir = path.join(pluginsRoot, pluginDir)
+  const appJs = path.join(dir, 'App.js')
+  if (!fs.existsSync(appJs)) return null
+  const encoded = encodeURIComponent(pluginDir)
+  return `ly-plugin://${encoded}/App.js`
+})
+
+ipcMain.handle('get-plugin-entry-url-by-id', (_event, pluginId) => {
+  const pluginDir = getPluginDirById(pluginId)
+  if (!pluginDir) return null
+  const pluginsRoot = getExtDir()
+  const appJs = path.join(pluginsRoot, pluginDir, 'App.js')
+  return fs.existsSync(appJs) ? `ly-plugin://${encodeURIComponent(pluginDir)}/App.js` : null
+})
+
+ipcMain.handle('uninstall-plugin', (_event, pluginDir) => {
+  const pluginsRoot = getExtDir()
+  const targetDir = path.join(pluginsRoot, pluginDir)
+  if (!targetDir.startsWith(pluginsRoot) || !fs.existsSync(targetDir)) {
+    return { ok: false, err: '插件目录不存在或路径非法' }
+  }
+  try {
+    fs.rmSync(targetDir, { recursive: true })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, err: e.message || '删除失败' }
+  }
+})
 
 function fetchPluginMarketHtml() {
   return new Promise((resolve, reject) => {

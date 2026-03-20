@@ -34,6 +34,14 @@
           class="tool-card"
           @click="item.route && onCardClick(item)"
         >
+          <el-tooltip v-if="canUninstall && item.pluginDir" content="卸载" placement="top" :show-after="300">
+            <span
+              class="tool-uninstall-btn"
+              @click.stop="onUninstall(item)"
+            >
+              <Icon icon="ri:close-line" :width="14" />
+            </span>
+          </el-tooltip>
           <div class="tool-card-body">
             <div class="tool-icon-wrap">
               <div class="tool-icon" :style="{ background: item.color || 'linear-gradient(135deg, #409eff 0%, #66b1ff 100%)' }">
@@ -63,11 +71,15 @@
 <script setup>
 import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
 
 const router = useRouter()
 const keyword = ref('')
 const pluginList = inject('pluginList', [])
+const refreshPlugins = inject('refreshPlugins', () => {})
+
+const canUninstall = computed(() => !!window.electronAPI?.uninstallPlugin)
 
 const filteredTools = computed(() => {
   const arr = pluginList?.list ?? pluginList
@@ -111,6 +123,29 @@ function onCardClick(item) {
   }
   router.push(item.route)
 }
+
+async function onUninstall(item) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要卸载「${item.title}」吗？卸载后将完全删除该插件的所有文件，无法恢复。`,
+      '确认卸载',
+      {
+        confirmButtonText: '卸载',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    const { ok, err } = await window.electronAPI.uninstallPlugin(item.pluginDir)
+    if (ok) {
+      ElMessage.success('卸载成功')
+      await refreshPlugins()
+    } else {
+      ElMessage.error(err || '卸载失败')
+    }
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '卸载失败')
+  }
+}
 </script>
 
 <style scoped>
@@ -144,9 +179,36 @@ function onCardClick(item) {
 }
 
 .tool-card {
+  position: relative;
   border-radius: 12px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tool-uninstall-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #909399;
+  opacity: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+}
+
+.tool-card:hover .tool-uninstall-btn {
+  opacity: 1;
+}
+
+.tool-uninstall-btn:hover {
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.1);
 }
 
 .tool-card:hover {
