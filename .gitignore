@@ -4,3 +4,6 @@ dist-electron/
 release/
 .vite/
 *.log
+
+plugins/
+plugins1/

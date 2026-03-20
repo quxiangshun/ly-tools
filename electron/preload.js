@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openShatterWindow: () => ipcRenderer.invoke('open-shatter-window'),
   closeShatterWindow: () => ipcRenderer.invoke('close-shatter-window'),
   getPluginList: () => ipcRenderer.invoke('get-plugin-list'),
+  getPluginMarketList: () => ipcRenderer.invoke('get-plugin-market-list'),
+  installPluginFromMarket: (filename) => ipcRenderer.invoke('install-plugin-from-market', filename),
   openLobsterWindow: () => ipcRenderer.invoke('open-lobster-window'),
   closeLobsterWindow: () => ipcRenderer.invoke('close-lobster-window'),
   sendLobsterState: (state) => ipcRenderer.send('lobster-sync-state', state),

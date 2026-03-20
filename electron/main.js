@@ -2,7 +2,12 @@ const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron')
 const { exec } = require('child_process')
 const path = require('path')
 const fs = require('fs')
+const os = require('os')
+const http = require('http')
+const https = require('https')
 const { pathToFileURL } = require('url')
+
+const PLUGIN_MARKET_BASE = 'http://39.106.39.125:9999/tools/plugins/'
 
 function getAppVersion() {
   if (app.isPackaged) return app.getVersion()
@@ -349,6 +354,7 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
 
 ipcMain.handle('get-platform', () => process.platform)
 
+// 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins
 function getExtDir() {
   const extDir = app.isPackaged
     ? path.join(require('os').homedir(), '.ly', 'tools', 'plugins')
@@ -395,6 +401,136 @@ function getPluginDirById(pluginId) {
 }
 
 ipcMain.handle('get-plugin-list', () => getPluginList())
+
+function fetchPluginMarketHtml() {
+  return new Promise((resolve, reject) => {
+    const url = new URL(PLUGIN_MARKET_BASE)
+    const get = url.protocol === 'https:' ? https.get : http.get
+    get(PLUGIN_MARKET_BASE, (res) => {
+      const chunks = []
+      res.on('data', (c) => chunks.push(c))
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+function parseZipLinksFromHtml(html) {
+  const list = []
+  const re = /href=["']([^"']+\.zip)["']/gi
+  let m
+  const seen = new Set()
+  while ((m = re.exec(html)) !== null) {
+    const raw = m[1].trim()
+    const filename = raw.split('/').pop().replace(/%20/g, ' ')
+    if (!filename.endsWith('.zip') || seen.has(filename)) continue
+    seen.add(filename)
+    list.push({
+      name: filename.replace(/\.zip$/i, ''),
+      filename,
+      url: new URL(filename, PLUGIN_MARKET_BASE).href,
+    })
+  }
+  return list
+}
+
+ipcMain.handle('get-plugin-market-list', async () => {
+  try {
+    const html = await fetchPluginMarketHtml()
+    return { success: true, list: parseZipLinksFromHtml(html) }
+  } catch (e) {
+    return { success: false, message: e.message || '获取列表失败', list: [] }
+  }
+})
+
+// 跨设备移动：rename 在 C: -> D: 会 EXDEV，改为复制后删除
+function copyRecursiveSync(src, dest) {
+  const stat = fs.statSync(src)
+  if (stat.isDirectory()) {
+    fs.mkdirSync(dest, { recursive: true })
+    for (const e of fs.readdirSync(src)) {
+      copyRecursiveSync(path.join(src, e), path.join(dest, e))
+    }
+  } else {
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    fs.copyFileSync(src, dest)
+  }
+}
+
+function moveToSync(src, dest) {
+  try {
+    fs.renameSync(src, dest)
+  } catch (err) {
+    if (err.code === 'EXDEV') {
+      copyRecursiveSync(src, dest)
+      fs.rmSync(src, { recursive: true, force: true })
+    } else {
+      throw err
+    }
+  }
+}
+
+// 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins，打包后=~/.ly/tools/plugins）
+ipcMain.handle('install-plugin-from-market', async (_event, filename) => {
+  const appRoot = path.join(__dirname, '..')
+  const AdmZip = require(path.join(appRoot, 'node_modules', 'adm-zip'))
+  const pluginsRoot = getExtDir()
+  const pluginName = filename.replace(/\.zip$/i, '')
+  const targetDir = path.join(pluginsRoot, pluginName)
+  const tmpFile = path.join(os.tmpdir(), `ly-tools-plugin-${Date.now()}-${filename}`)
+  const tmpDir = path.join(os.tmpdir(), `ly-tools-plugin-extract-${Date.now()}`)
+
+  try {
+    await new Promise((resolve, reject) => {
+      const url = new URL(filename, PLUGIN_MARKET_BASE).href
+      const get = url.startsWith('https') ? https.get : http.get
+      const file = fs.createWriteStream(tmpFile)
+      const onResponse = (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          const loc = new URL(res.headers.location || '', url).href
+          return get(loc, onResponse).on('error', reject)
+        }
+        res.pipe(file).on('finish', resolve).on('error', reject)
+      }
+      get(url, onResponse).on('error', (e) => {
+        file.close()
+        reject(e)
+      })
+    })
+
+    fs.mkdirSync(tmpDir, { recursive: true })
+    const zip = new AdmZip(tmpFile)
+    zip.extractAllTo(tmpDir, true)
+
+    const entries = fs.readdirSync(tmpDir)
+    if (entries.length === 1) {
+      const single = path.join(tmpDir, entries[0])
+      if (fs.statSync(single).isDirectory()) {
+        if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true })
+        moveToSync(single, targetDir)
+      } else {
+        fs.mkdirSync(targetDir, { recursive: true })
+        moveToSync(single, path.join(targetDir, entries[0]))
+      }
+    } else {
+      if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true })
+      fs.mkdirSync(targetDir, { recursive: true })
+      for (const e of entries) {
+        moveToSync(path.join(tmpDir, e), path.join(targetDir, e))
+      }
+    }
+
+    fs.unlinkSync(tmpFile)
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    return { success: true, message: `已安装：${pluginName}` }
+  } catch (e) {
+    try {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+      if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true })
+    } catch (_) {}
+    return { success: false, message: e.message || '安装失败' }
+  }
+})
 
 ipcMain.handle('open-lock-screen', () => {
   createLockWindow()

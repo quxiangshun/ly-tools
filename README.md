@@ -1,4 +1,4 @@
-# LY Tools
+# 栾媛小工具（无用版）
 
 基于 Electron + Vue 3 + Element Plus 的实用小工具集。
 

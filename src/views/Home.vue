@@ -14,36 +14,49 @@
       </el-input>
     </div>
 
-    <div class="card-grid">
-      <el-card
-        v-for="item in filteredTools"
-        :key="item.route"
-        shadow="hover"
-        class="tool-card"
-        @click="onCardClick(item)"
-      >
-        <div class="tool-card-body">
-          <div class="tool-icon-wrap">
-            <div class="tool-icon" :style="{ background: item.color }">
-              <Icon :icon="item.icon" :width="24" />
-            </div>
-            <span v-if="item.version" class="tool-version">v{{ item.version }}</span>
-          </div>
-          <div class="tool-text">
-            <h3 class="tool-title">{{ item.title }}</h3>
-            <el-tooltip :content="item.description || ''" placement="top" :show-after="300">
-              <p class="tool-desc">{{ item.description }}</p>
-            </el-tooltip>
-          </div>
-        </div>
-      </el-card>
-    </div>
-
     <el-empty
-      v-if="keyword && filteredTools.length === 0"
-      description="未找到匹配的工具"
+      v-if="hasNoPlugins"
       class="empty-tip"
-    />
+      description="暂无插件，请到插件市场下载"
+    >
+      <el-button type="primary" @click="router.push('/plugin-market')">
+        <Icon icon="ri:store-2-line" :width="18" style="vertical-align: middle; margin-right: 4px" />
+        去插件市场
+      </el-button>
+    </el-empty>
+
+    <template v-else>
+      <div class="card-grid">
+        <el-card
+          v-for="item in displayList"
+          :key="item.route || 'plugin-market'"
+          shadow="hover"
+          class="tool-card"
+          @click="item.route ? onCardClick(item) : router.push('/plugin-market')"
+        >
+          <div class="tool-card-body">
+            <div class="tool-icon-wrap">
+              <div class="tool-icon" :style="{ background: item.color || 'linear-gradient(135deg, #409eff 0%, #66b1ff 100%)' }">
+                <Icon :icon="item.icon || 'ri:store-2-line'" :width="24" />
+              </div>
+              <span v-if="item.version" class="tool-version">v{{ item.version }}</span>
+            </div>
+            <div class="tool-text">
+              <h3 class="tool-title">{{ item.title }}</h3>
+              <el-tooltip :content="item.description || ''" placement="top" :show-after="300">
+                <p class="tool-desc">{{ item.description }}</p>
+              </el-tooltip>
+            </div>
+          </div>
+        </el-card>
+      </div>
+
+      <el-empty
+        v-if="keyword && filteredTools.length === 0"
+        description="未找到匹配的工具"
+        class="empty-tip"
+      />
+    </template>
   </div>
 </template>
 
@@ -56,14 +69,30 @@ const router = useRouter()
 const keyword = ref('')
 const pluginList = inject('pluginList', [])
 
+const marketCard = {
+  title: '插件市场',
+  description: '浏览并安装更多插件',
+  icon: 'ri:store-2-line',
+  color: 'linear-gradient(135deg, #409eff 0%, #66b1ff 100%)',
+}
+
 const filteredTools = computed(() => {
+  const arr = pluginList?.list ?? pluginList
   const k = keyword.value.trim().toLowerCase()
-  if (!k) return pluginList
-  return pluginList.filter(
+  if (!k) return Array.isArray(arr) ? arr : []
+  return (Array.isArray(arr) ? arr : []).filter(
     (t) =>
-      t.title.toLowerCase().includes(k) ||
+      t.title?.toLowerCase().includes(k) ||
       (t.description && t.description.toLowerCase().includes(k))
   )
+})
+
+const displayList = computed(() => [marketCard, ...filteredTools.value])
+
+const hasNoPlugins = computed(() => {
+  const arr = pluginList?.list ?? pluginList
+  const list = Array.isArray(arr) ? arr : []
+  return list.length === 0 && !keyword.value
 })
 
 function onCardClick(item) {

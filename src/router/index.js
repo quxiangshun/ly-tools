@@ -4,7 +4,7 @@ import Home from '../views/Home.vue'
 // 扫描 plugins 下所有 */App.vue，按 pluginDir 动态加载，无需逐个 import
 const pluginModules = import.meta.glob('../../plugins/*/App.vue')
 
-function getPluginComponentLoader(pluginDir) {
+export function getPluginComponentLoader(pluginDir) {
   const key = `../../plugins/${pluginDir}/App.vue`
   const load = pluginModules[key]
   if (!load) return null
@@ -16,6 +16,7 @@ const defaultPluginsForWeb = []
 export function buildRoutes(pluginList) {
   const routes = [
     { path: '/', name: 'Home', component: Home },
+    { path: '/plugin-market', name: 'PluginMarket', component: () => import('../views/PluginMarket.vue') },
     ...pluginList
       .filter((p) => p.pluginDir && getPluginComponentLoader(p.pluginDir))
       .map((p) => ({

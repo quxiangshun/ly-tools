@@ -1,9 +1,0 @@
-{
-  "id": "icon-generator",
-  "route": "/icon-generator",
-  "icon": "ri:palette-line",
-  "description": "文字生成 ICO 图标，支持多尺寸",
-  "color": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-  "version": "1.0.0",
-  "supportedOS": ["win64"]
-}

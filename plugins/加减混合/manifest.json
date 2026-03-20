@@ -1,9 +1,0 @@
-{
-  "id": "math-gen",
-  "route": "/math-gen",
-  "icon": "ri:calculator-line",
-  "description": "一年级/大班口算题生成：基本计算、比大小、填未知数，可导出Excel与打印",
-  "color": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  "version": "1.0.0",
-  "supportedOS": ["win64"]
-}

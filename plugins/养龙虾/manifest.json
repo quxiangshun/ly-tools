@@ -1,9 +1,0 @@
-{
-  "id": "lobster",
-  "route": "/lobster",
-  "icon": "ri:restaurant-2-line",
-  "description": "点击加号增加龙虾，减号随机杀掉一只，龙虾从屏幕任意位置爬出",
-  "color": "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
-  "version": "1.0.0",
-  "supportedOS": ["win64"]
-}
