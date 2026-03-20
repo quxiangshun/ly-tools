@@ -1,6 +1,14 @@
 /**
  * 构建插件：将 plugins-ext 下各目录的 App.vue 编译为 App.js（UMD）
  * 输出到 plugins/<插件名>/，并打包为 plugins/<插件名>.zip
+ *
+ * 用法：
+ *   node scripts/build-plugins.js           # 构建所有插件
+ *   node scripts/build-plugins.js 秀恩爱    # 仅构建指定插件
+ *   node scripts/build-plugins.js 秀恩爱 端口查杀  # 构建多个指定插件
+ *
+ * npm run build:plugins           # 构建所有
+ * npm run build:plugins -- 秀恩爱 # 构建指定插件
  */
 const path = require('path')
 const fs = require('fs')
@@ -16,13 +24,25 @@ if (!fs.existsSync(srcRoot)) {
   process.exit(0)
 }
 
-const dirs = fs.readdirSync(srcRoot, { withFileTypes: true })
+const allDirs = fs.readdirSync(srcRoot, { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .filter((d) => fs.existsSync(path.join(srcRoot, d.name, 'App.vue')))
   .map((d) => d.name)
 
+const targetNames = process.argv.slice(2).filter(Boolean)
+const dirs = targetNames.length === 0
+  ? allDirs
+  : targetNames.filter((name) => {
+      if (allDirs.includes(name)) return true
+      console.warn(`  跳过不存在的插件: ${name}`)
+      return false
+    })
+
 if (dirs.length === 0) {
-  console.log('无插件需要构建')
+  console.log(targetNames.length ? '无匹配的插件需要构建' : '无插件需要构建')
+  if (targetNames.length && allDirs.length) {
+    console.log('可用插件:', allDirs.join(', '))
+  }
   process.exit(0)
 }
 
@@ -92,7 +112,7 @@ function zipPlugin(dir) {
 async function main() {
   if (!fs.existsSync(outRoot)) fs.mkdirSync(outRoot, { recursive: true })
 
-  console.log(`构建 ${dirs.length} 个插件...`)
+  console.log(`构建 ${dirs.length} 个插件${targetNames.length ? `: ${dirs.join(', ')}` : ''}...`)
   for (const dir of dirs) {
     await buildOne(dir)
   }
