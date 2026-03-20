@@ -1,12 +1,34 @@
 import { createRouter, createMemoryHistory } from 'vue-router'
 import Home from '../views/Home.vue'
+import { pluginModules } from '../plugin-modules'
 
-// 扫描 plugins 下所有 */App.vue，按 pluginDir 动态加载，无需逐个 import
-const pluginModules = import.meta.glob('../../plugins/*/App.vue')
+function findPluginLoad(pluginDir) {
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(pluginDir)
+    } catch {
+      return pluginDir
+    }
+  })()
+  const keys = [
+    `../plugins/${pluginDir}/App.vue`,
+    ...(decoded !== pluginDir ? [`../plugins/${decoded}/App.vue`] : []),
+  ]
+  for (const key of keys) {
+    const load = pluginModules[key]
+    if (load) return load
+  }
+  const sep = /[/\\]/
+  for (const [key, load] of Object.entries(pluginModules)) {
+    const parts = key.split(sep)
+    const dir = parts[parts.length - 2]
+    if (dir === pluginDir || dir === decoded) return load
+  }
+  return null
+}
 
 export function getPluginComponentLoader(pluginDir) {
-  const key = `../../plugins/${pluginDir}/App.vue`
-  const load = pluginModules[key]
+  const load = findPluginLoad(pluginDir)
   if (!load) return null
   return () => load().then((m) => m.default)
 }

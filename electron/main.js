@@ -249,7 +249,10 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  migrateEncodedPluginDirs()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
@@ -363,6 +366,29 @@ function getExtDir() {
   return extDir
 }
 
+// 将 URL 编码的插件目录名迁移为解码后的中文名，避免 Vite 请求 404
+function migrateEncodedPluginDirs() {
+  const pluginsRoot = getExtDir()
+  if (!fs.existsSync(pluginsRoot)) return
+  try {
+    const names = fs.readdirSync(pluginsRoot, { withFileTypes: true })
+    for (const d of names) {
+      if (!d.isDirectory()) continue
+      const raw = d.name
+      if (!/%[0-9A-Fa-f]{2}/.test(raw)) continue
+      try {
+        const decoded = decodeURIComponent(raw)
+        if (decoded === raw) continue
+        const oldPath = path.join(pluginsRoot, raw)
+        const newPath = path.join(pluginsRoot, decoded)
+        if (!fs.existsSync(newPath)) {
+          fs.renameSync(oldPath, newPath)
+        }
+      } catch (_) {}
+    }
+  } catch (_) {}
+}
+
 function getPluginList() {
   const pluginsRoot = getExtDir()
   const list = []
@@ -387,7 +413,16 @@ function getPluginList() {
             .replace(/^macos?$/, 'darwin')
         )
         if (!normalized.includes(platform)) continue
-        list.push({ pluginDir, title: manifest.title ?? pluginDir, ...manifest })
+        const displayTitle =
+          manifest.title ??
+          (() => {
+            try {
+              return decodeURIComponent(pluginDir)
+            } catch {
+              return pluginDir
+            }
+          })()
+        list.push({ pluginDir, ...manifest, title: displayTitle })
       } catch (_) {}
     }
   } catch (_) {}
@@ -415,7 +450,44 @@ function fetchPluginMarketHtml() {
   })
 }
 
-function parseZipLinksFromHtml(html) {
+/** 获取插件市场 index.json，用于显示中文名称。格式：{ "plugins": [{ "filename": "xxx.zip", "title": "中文名" }] } 或 { "xxx.zip": "中文名" } */
+async function fetchPluginMarketIndex() {
+  return new Promise((resolve) => {
+    const url = new URL('index.json', PLUGIN_MARKET_BASE).href
+    const get = url.startsWith('https') ? https.get : http.get
+    get(url, (res) => {
+      const chunks = []
+      res.on('data', (c) => chunks.push(c))
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString('utf-8'))
+          resolve(json)
+        } catch {
+          resolve(null)
+        }
+      })
+      res.on('error', () => resolve(null))
+    }).on('error', () => resolve(null))
+  })
+}
+
+function buildTitleMap(indexJson) {
+  const map = {}
+  if (!indexJson) return map
+  if (Array.isArray(indexJson.plugins)) {
+    for (const p of indexJson.plugins) {
+      if (p.filename && p.title) map[p.filename] = p.title
+    }
+  } else if (typeof indexJson === 'object') {
+    for (const [k, v] of Object.entries(indexJson)) {
+      if (k.endsWith('.zip') && typeof v === 'string') map[k] = v
+      else if (k.endsWith('.zip') && v && typeof v.title === 'string') map[k] = v.title
+    }
+  }
+  return map
+}
+
+function parseZipLinksFromHtml(html, titleMap = {}) {
   const list = []
   const re = /href=["']([^"']+\.zip)["']/gi
   let m
@@ -425,8 +497,10 @@ function parseZipLinksFromHtml(html) {
     const filename = raw.split('/').pop().replace(/%20/g, ' ')
     if (!filename.endsWith('.zip') || seen.has(filename)) continue
     seen.add(filename)
+    const name = filename.replace(/\.zip$/i, '')
     list.push({
-      name: filename.replace(/\.zip$/i, ''),
+      name,
+      title: titleMap[filename] || name,
       filename,
       url: new URL(filename, PLUGIN_MARKET_BASE).href,
     })
@@ -436,8 +510,12 @@ function parseZipLinksFromHtml(html) {
 
 ipcMain.handle('get-plugin-market-list', async () => {
   try {
-    const html = await fetchPluginMarketHtml()
-    return { success: true, list: parseZipLinksFromHtml(html) }
+    const [html, indexJson] = await Promise.all([
+      fetchPluginMarketHtml(),
+      fetchPluginMarketIndex(),
+    ])
+    const titleMap = buildTitleMap(indexJson)
+    return { success: true, list: parseZipLinksFromHtml(html, titleMap) }
   } catch (e) {
     return { success: false, message: e.message || '获取列表失败', list: [] }
   }
@@ -470,12 +548,21 @@ function moveToSync(src, dest) {
   }
 }
 
+// 插件目录使用解码后的中文名，避免 Vite 请求 URL 解码后路径不匹配导致 404
+function decodePluginDirName(raw) {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
+
 // 插件市场安装：下载 zip，自动解压到插件目录（开发=项目 plugins，打包后=~/.ly/tools/plugins）
 ipcMain.handle('install-plugin-from-market', async (_event, filename) => {
   const appRoot = path.join(__dirname, '..')
   const AdmZip = require(path.join(appRoot, 'node_modules', 'adm-zip'))
   const pluginsRoot = getExtDir()
-  const pluginName = filename.replace(/\.zip$/i, '')
+  const pluginName = decodePluginDirName(filename.replace(/\.zip$/i, ''))
   const targetDir = path.join(pluginsRoot, pluginName)
   const tmpFile = path.join(os.tmpdir(), `ly-tools-plugin-${Date.now()}-${filename}`)
   const tmpDir = path.join(os.tmpdir(), `ly-tools-plugin-extract-${Date.now()}`)

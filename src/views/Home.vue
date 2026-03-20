@@ -29,10 +29,10 @@
       <div class="card-grid">
         <el-card
           v-for="item in displayList"
-          :key="item.route || 'plugin-market'"
+          :key="item.id || item.route"
           shadow="hover"
           class="tool-card"
-          @click="item.route ? onCardClick(item) : router.push('/plugin-market')"
+          @click="item.route && onCardClick(item)"
         >
           <div class="tool-card-body">
             <div class="tool-icon-wrap">
@@ -69,13 +69,6 @@ const router = useRouter()
 const keyword = ref('')
 const pluginList = inject('pluginList', [])
 
-const marketCard = {
-  title: '插件市场',
-  description: '浏览并安装更多插件',
-  icon: 'ri:store-2-line',
-  color: 'linear-gradient(135deg, #409eff 0%, #66b1ff 100%)',
-}
-
 const filteredTools = computed(() => {
   const arr = pluginList?.list ?? pluginList
   const k = keyword.value.trim().toLowerCase()
@@ -87,7 +80,7 @@ const filteredTools = computed(() => {
   )
 })
 
-const displayList = computed(() => [marketCard, ...filteredTools.value])
+const displayList = computed(() => filteredTools.value)
 
 const hasNoPlugins = computed(() => {
   const arr = pluginList?.list ?? pluginList

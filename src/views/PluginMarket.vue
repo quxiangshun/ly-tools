@@ -1,7 +1,7 @@
 <template>
   <div class="plugin-market">
     <h2 class="market-title">插件市场</h2>
-    <p class="market-desc">资源来自 <code>http://39.106.39.125:9999/tools/plugins/</code>，安装后会自动热加载，新插件立即可用。</p>
+    <p class="market-desc">资源来自 <code>http://39.106.39.125:9999/tools/plugins/</code>，安装后会自动热加载，新插件立即可用。若服务器提供 <code>index.json</code>，将显示插件中文名称。</p>
 
     <template v-if="!hasElectron">
       <el-alert type="info" :closable="false" class="market-alert">
@@ -20,7 +20,7 @@
             class="market-card"
           >
             <div class="market-card-body">
-              <div class="market-name">{{ item.name }}</div>
+              <div class="market-name">{{ item.title ?? item.name }}</div>
               <el-button
                 v-if="isInstalled(item)"
                 type="success"
@@ -53,7 +53,6 @@ import { ref, onMounted, computed, inject } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const hasElectron = computed(() => !!window.electronAPI)
-const pluginList = inject('pluginList', { list: [] })
 const refreshPlugins = inject('refreshPlugins', null)
 
 const loading = ref(true)
@@ -61,15 +60,35 @@ const list = ref([])
 const installing = ref('')
 
 function isInstalled(item) {
-  const arr = pluginList?.list ?? (Array.isArray(pluginList) ? pluginList : [])
-  return arr.some((p) => p.pluginDir === item.name)
+  const arr = localPlugins.value
+  const decodedName = (() => {
+    try {
+      return decodeURIComponent(item.name)
+    } catch {
+      return item.name
+    }
+  })()
+  const matchName = item.title ?? decodedName
+  return arr.some((p) => {
+    const dir = p.pluginDir
+    return dir === matchName || dir === item.name || dir === decodedName
+  })
+}
+
+const localPlugins = ref([])
+
+async function fetchLocalPlugins() {
+  if (!window.electronAPI?.getPluginList) return []
+  const list = await window.electronAPI.getPluginList()
+  localPlugins.value = Array.isArray(list) ? list : []
+  return localPlugins.value
 }
 
 function loadList() {
   if (!window.electronAPI?.getPluginMarketList) return
   loading.value = true
-  window.electronAPI
-    .getPluginMarketList()
+  fetchLocalPlugins()
+    .then(() => window.electronAPI.getPluginMarketList())
     .then(({ success, list: data, message }) => {
       if (success) list.value = data || []
       else ElMessage.warning(message || '获取列表失败')
@@ -86,12 +105,10 @@ function install(item) {
     .installPluginFromMarket(item.filename)
     .then(async ({ success, message }) => {
       if (success) {
-        ElMessage.success(message)
         loadList()
-        if (typeof refreshPlugins === 'function') {
-          await refreshPlugins()
-          ElMessage.success('已热加载，新插件可用')
-        }
+        if (typeof refreshPlugins === 'function') await refreshPlugins()
+        ElMessage.success('安装成功，正在刷新以加载新插件')
+        setTimeout(() => location.reload(), 600)
       } else {
         ElMessage.error(message || '安装失败')
       }

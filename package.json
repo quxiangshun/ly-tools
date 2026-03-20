@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && electron-builder",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:index": "node scripts/generate-plugin-index.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
