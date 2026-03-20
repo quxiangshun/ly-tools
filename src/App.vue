@@ -7,7 +7,7 @@
           返回
         </router-link>
         <div class="app-logo">
-          <Icon icon="ri:tools-fill" :width="24" />
+          <img :src="iconImg" alt="栾媛小工具" class="app-logo-img" />
           <span>栾媛小工具（无用版）</span>
           <el-tooltip placement="bottom" effect="dark" :show-after="300">
             <template #content>
@@ -40,6 +40,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import iconImg from './assets/icon-512.png'
 
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
@@ -90,6 +91,12 @@ html, body, #app {
   font-weight: 600;
   letter-spacing: 0.5px;
   -webkit-app-region: no-drag;
+}
+
+.app-logo-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .app-logo-tip {

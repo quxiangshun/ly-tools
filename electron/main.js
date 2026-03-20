@@ -1,3 +1,8 @@
+/**
+ * ly-tools (栾媛小工具)
+ * Copyright (C) 2025 屈想顺
+ * Licensed under AGPL-3.0
+ */
 const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron')
 const { exec } = require('child_process')
 const path = require('path')
@@ -239,7 +244,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: app.isPackaged
+      ? path.join(__dirname, process.platform === 'win32' ? '../dist/icon.ico' : '../dist/icon-512.png')
+      : path.join(__dirname, '../public/icon-512.png'),
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {

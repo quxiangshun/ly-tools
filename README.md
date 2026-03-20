@@ -1,5 +1,7 @@
 # 栾媛小工具（无用版）
 
+Copyright (C) 2025 屈想顺. Licensed under [AGPL-3.0](LICENSE).
+
 基于 Electron + Vue 3 + Element Plus 的实用小工具集。
 
 ## 功能

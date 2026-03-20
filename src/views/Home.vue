@@ -1,5 +1,12 @@
 <template>
   <div class="home">
+    <div class="home-header">
+      <img :src="iconImg" alt="栾媛小工具" class="home-logo" />
+      <span class="home-title">栾媛小工具</span>
+    </div>
+    <div class="home-copyright">
+      © 2025 屈想顺 · <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+    </div>
     <div class="search-bar">
       <el-input
         v-model="keyword"
@@ -64,6 +71,7 @@
 import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import iconImg from '../assets/icon-512.png'
 
 const router = useRouter()
 const keyword = ref('')
@@ -116,6 +124,40 @@ function onCardClick(item) {
 <style scoped>
 .home {
   width: 100%;
+}
+
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.home-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.home-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.home-copyright {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 16px;
+}
+
+.home-copyright a {
+  color: #409eff;
+  text-decoration: none;
+}
+
+.home-copyright a:hover {
+  text-decoration: underline;
 }
 
 .search-bar {

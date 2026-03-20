@@ -1,3 +1,8 @@
+/**
+ * ly-tools (栾媛小工具)
+ * Copyright (C) 2025 屈想顺
+ * Licensed under AGPL-3.0
+ */
 import { createApp, reactive } from 'vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
