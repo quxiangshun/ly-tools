@@ -33,6 +33,9 @@
     <main class="app-main">
       <router-view />
     </main>
+    <footer class="app-footer">
+      © 2025 屈想顺 · <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+    </footer>
   </div>
 </template>
 
@@ -176,5 +179,23 @@ html, body, #app {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+}
+
+.app-footer {
+  padding: 12px 24px;
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.app-footer a {
+  color: #409eff;
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
 }
 </style>
