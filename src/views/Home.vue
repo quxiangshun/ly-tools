@@ -26,38 +26,12 @@
     </el-empty>
 
     <template v-else>
-      <div class="card-grid">
-        <el-card
-          v-for="item in displayList"
-          :key="item.id || item.route"
-          shadow="hover"
-          class="tool-card"
-          @click="item.route && onCardClick(item)"
-        >
-          <el-tooltip v-if="canUninstall && item.pluginDir" content="卸载" placement="top" :show-after="300">
-            <span
-              class="tool-uninstall-btn"
-              @click.stop="onUninstall(item)"
-            >
-              <Icon icon="ri:close-line" :width="14" />
-            </span>
-          </el-tooltip>
-          <div class="tool-card-body">
-            <div class="tool-icon-wrap">
-              <div class="tool-icon" :style="{ background: item.color || 'linear-gradient(135deg, #409eff 0%, #66b1ff 100%)' }">
-                <Icon :icon="item.icon || 'ri:store-2-line'" :width="24" />
-              </div>
-              <span v-if="item.version" class="tool-version">v{{ item.version }}</span>
-            </div>
-            <div class="tool-text">
-              <h3 class="tool-title">{{ item.title }}</h3>
-              <el-tooltip :content="item.description || ''" placement="top" :show-after="300">
-                <p class="tool-desc">{{ item.description }}</p>
-              </el-tooltip>
-            </div>
-          </div>
-        </el-card>
-      </div>
+      <ToolCardList
+        :list="displayList"
+        :can-uninstall="canUninstall"
+        :on-card-click="onCardClick"
+        :on-uninstall="onUninstall"
+      />
 
       <el-empty
         v-if="keyword && filteredTools.length === 0"
@@ -73,13 +47,15 @@ import { ref, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
+import ToolCardList from './components/ToolCardList.vue'
 
 const router = useRouter()
 const keyword = ref('')
 const pluginList = inject('pluginList', [])
 const refreshPlugins = inject('refreshPlugins', () => {})
+const electronAPI = inject('electronAPI', {})
 
-const canUninstall = computed(() => !!window.electronAPI?.uninstallPlugin)
+const canUninstall = computed(() => !!electronAPI?.uninstallPlugin)
 
 const filteredTools = computed(() => {
   const arr = pluginList?.list ?? pluginList
@@ -102,16 +78,16 @@ const hasNoPlugins = computed(() => {
 
 function onCardClick(item) {
   if (item.fullScreen && item.id === 'lock-screen') {
-    if (window.electronAPI?.openLockScreen) {
-      window.electronAPI.openLockScreen()
+    if (electronAPI?.openLockScreen) {
+      electronAPI.openLockScreen()
     } else {
       router.push(item.route)
     }
     return
   }
   if (item.fullScreen && item.id === 'lock-screen-light-off') {
-    if (window.electronAPI?.openLightOffWindow) {
-      window.electronAPI.openLightOffWindow()
+    if (electronAPI?.openLightOffWindow) {
+      electronAPI.openLightOffWindow()
     } else {
       router.push(item.route)
     }
@@ -135,7 +111,7 @@ async function onUninstall(item) {
         type: 'warning',
       }
     )
-    const { ok, err } = await window.electronAPI.uninstallPlugin(item.pluginDir)
+    const { ok, err } = await electronAPI.uninstallPlugin(item.pluginDir)
     if (ok) {
       ElMessage.success('卸载成功')
       await refreshPlugins()
@@ -170,109 +146,6 @@ async function onUninstall(item) {
 .search-input :deep(.el-input__wrapper:hover),
 .search-input :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 2px 16px rgba(64, 158, 255, 0.2);
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.tool-card {
-  position: relative;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.tool-uninstall-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  color: #909399;
-  opacity: 0;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: opacity 0.2s, color 0.2s, background 0.2s;
-}
-
-.tool-card:hover .tool-uninstall-btn {
-  opacity: 1;
-}
-
-.tool-uninstall-btn:hover {
-  color: #f56c6c;
-  background: rgba(245, 108, 108, 0.1);
-}
-
-.tool-card:hover {
-  transform: translateY(-2px);
-}
-
-.tool-card :deep(.el-card__body) {
-  padding: 12px 16px;
-}
-
-.tool-card-body {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
-}
-
-.tool-icon-wrap {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.tool-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.tool-text {
-  flex: 1;
-  min-width: 0;
-  text-align: left;
-}
-
-.tool-title {
-  font-size: 16px;
-  color: #303133;
-  margin: 0 0 4px 0;
-  font-weight: 600;
-}
-
-.tool-version {
-  font-size: 10px;
-  font-weight: 400;
-  color: #909399;
-}
-
-.tool-desc {
-  font-size: 12px;
-  color: #909399;
-  margin: 0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .empty-tip {

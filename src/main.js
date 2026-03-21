@@ -47,6 +47,7 @@ if (standalonePluginId) {
       .then((comp) => {
         if (comp) {
           const app = createApp(comp, { standalone: true })
+          app.provide('electronAPI', window.electronAPI ?? {})
           app.use(ElementPlus)
           app.mount('#app')
         } else {
@@ -94,6 +95,7 @@ if (standalonePluginId) {
     app.use(router)
     app.provide('pluginList', pluginState)
     app.provide('refreshPlugins', refreshPlugins)
+    app.provide('electronAPI', window.electronAPI ?? {})
     app.mount('#app')
   }
   init()

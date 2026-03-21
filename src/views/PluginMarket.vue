@@ -52,7 +52,8 @@
 import { ref, onMounted, computed, inject } from 'vue'
 import { ElMessage } from 'element-plus'
 
-const hasElectron = computed(() => !!window.electronAPI)
+const electronAPI = inject('electronAPI', {})
+const hasElectron = computed(() => !!electronAPI?.getPluginList)
 const refreshPlugins = inject('refreshPlugins', null)
 
 const loading = ref(true)
@@ -78,17 +79,17 @@ function isInstalled(item) {
 const localPlugins = ref([])
 
 async function fetchLocalPlugins() {
-  if (!window.electronAPI?.getPluginList) return []
-  const list = await window.electronAPI.getPluginList()
+  if (!electronAPI?.getPluginList) return []
+  const list = await electronAPI.getPluginList()
   localPlugins.value = Array.isArray(list) ? list : []
   return localPlugins.value
 }
 
 function loadList() {
-  if (!window.electronAPI?.getPluginMarketList) return
+  if (!electronAPI?.getPluginMarketList) return
   loading.value = true
   fetchLocalPlugins()
-    .then(() => window.electronAPI.getPluginMarketList())
+    .then(() => electronAPI.getPluginMarketList())
     .then(({ success, list: data, message }) => {
       if (success) list.value = data || []
       else ElMessage.warning(message || '获取列表失败')
@@ -99,9 +100,9 @@ function loadList() {
 }
 
 function install(item) {
-  if (!window.electronAPI?.installPluginFromMarket) return
+  if (!electronAPI?.installPluginFromMarket) return
   installing.value = item.filename
-  window.electronAPI
+  electronAPI
     .installPluginFromMarket(item.filename)
     .then(async ({ success, message }) => {
       if (success) {
