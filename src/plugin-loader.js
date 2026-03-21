@@ -3,10 +3,10 @@
  * 主程序不依赖 plugins 源码，插件需预构建为 App.js（UMD）
  */
 import * as Vue from 'vue'
-import ElementPlus from 'element-plus'
+import * as ElementPlus from 'element-plus'
 import * as Icon from '@iconify/vue'
 
-// 插件 UMD 需要这些全局变量
+// 插件 UMD 需要这些全局变量（ElementPlus 需用 namespace 以包含 ElMessage、ElMessageBox 等）
 export function exposePluginHost() {
   if (typeof window === 'undefined') return
   window.Vue = Vue

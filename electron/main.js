@@ -4,7 +4,8 @@
  * Licensed under AGPL-3.0
  */
 const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu, protocol } = require('electron')
-const { exec } = require('child_process')
+const { exec, execFile } = require('child_process')
+const sudo = require('@vscode/sudo-prompt')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -284,6 +285,10 @@ function createWindow() {
       mainWindow.hide()
     }
   })
+
+  if (!app.isPackaged && process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.webContents.openDevTools({ mode: 'detach' })
+  }
 }
 
 if (process.platform === 'win32') {
@@ -431,6 +436,26 @@ ipcMain.handle('find-process-by-port', async (_event, port) => {
   return processes
 })
 
+function execFilePromise(file, args, opts = {}) {
+  return new Promise((resolve) => {
+    execFile(file, args, {
+      encoding: 'utf-8',
+      windowsHide: true,
+      ...opts,
+    }, (error, stdout, stderr) => {
+      resolve({ error, stdout: stdout || '', stderr: stderr || '' })
+    })
+  })
+}
+
+function sudoExecPromise(cmd) {
+  return new Promise((resolve) => {
+    sudo.exec(cmd, {}, (error, stdout, stderr) => {
+      resolve({ error, stdout: stdout || '', stderr: stderr || '' })
+    })
+  })
+}
+
 ipcMain.handle('kill-process', async (_event, pid) => {
   const pidStr = String(pid).trim()
   if (!/^\d+$/.test(pidStr)) {
@@ -438,21 +463,31 @@ ipcMain.handle('kill-process', async (_event, pid) => {
   }
 
   const isWin = process.platform === 'win32'
-  let cmd
+  let result
   if (isWin) {
-    cmd = `taskkill /F /PID ${pidStr} /T`
+    result = await execFilePromise('taskkill', ['/F', '/PID', pidStr])
+    const msg = (result.stderr || result.error?.message || '').trim()
+    const isAccessDenied = /拒绝访问|Access is denied|Access denied/i.test(msg)
+    if (!app.isPackaged) {
+      console.log('[kill-process] 首次尝试 result:', { error: result.error?.message, stderr: result.stderr, isAccessDenied })
+    }
+    if (result.error && isAccessDenied) {
+      if (!app.isPackaged) console.log('[kill-process] 权限不足，尝试 UAC 提升...')
+      result = await sudoExecPromise(`taskkill /F /PID ${pidStr}`)
+      if (!app.isPackaged) console.log('[kill-process] UAC 结果:', { error: result.error?.message, stderr: result.stderr })
+    }
   } else {
-    cmd = `kill -9 ${pidStr}`
+    result = await execPromise(`kill -9 ${pidStr}`)
   }
 
-  const { error, stdout, stderr } = await execPromise(cmd)
+  const { error, stdout, stderr } = result
   if (error) {
     const msg = (stderr || error.message || '').trim()
     const isAccessDenied = /拒绝访问|Access is denied|Access denied/i.test(msg)
     return {
       success: false,
       message: isAccessDenied
-        ? '权限不足，请右键「以管理员身份运行」本程序后重试'
+        ? '权限不足，用户已取消授权或授权失败'
         : msg || error.message,
     }
   }
