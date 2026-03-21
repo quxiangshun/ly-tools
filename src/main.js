@@ -21,21 +21,43 @@ function getStandalonePluginId() {
 const standalonePluginId = getStandalonePluginId()
 
 if (standalonePluginId) {
-  loadPluginComponentById(standalonePluginId).then((comp) => {
-    if (comp) {
-      const app = createApp(comp, { standalone: true })
-      app.use(ElementPlus)
-      app.mount('#app')
-    } else {
-      const app = createApp(App)
-      app.use(ElementPlus)
-      app.mount('#app')
+  document.body.style.background = '#000'
+  document.documentElement.style.background = '#000'
+  const mountFallback = () => {
+    const Fallback = {
+      template: `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#1a1a1a;color:#fff;font-family:sans-serif;">
+          <p style="margin-bottom:16px;">插件加载失败</p>
+          <button @click="close" style="padding:8px 20px;cursor:pointer;background:#409eff;color:#fff;border:none;border-radius:6px;">关闭</button>
+        </div>
+      `,
+      methods: {
+        close() {
+          if (window.electronAPI?.closeLightOffWindow) window.electronAPI.closeLightOffWindow()
+          else if (window.electronAPI?.closeLobsterWindow) window.electronAPI.closeLobsterWindow()
+        },
+      },
     }
-  }).catch(() => {
-    const app = createApp(App)
-    app.use(ElementPlus)
-    app.mount('#app')
-  })
+    createApp(Fallback).mount('#app')
+  }
+  if (!window.electronAPI?.getPluginEntryUrlById) {
+    mountFallback()
+  } else {
+    loadPluginComponentById(standalonePluginId)
+      .then((comp) => {
+        if (comp) {
+          const app = createApp(comp, { standalone: true })
+          app.use(ElementPlus)
+          app.mount('#app')
+        } else {
+          mountFallback()
+        }
+      })
+      .catch((err) => {
+        console.error('[ly-tools] 插件加载失败:', err)
+        mountFallback()
+      })
+  }
 } else {
   const pluginState = reactive({ list: [] })
 

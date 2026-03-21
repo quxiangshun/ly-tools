@@ -11,6 +11,20 @@
     <base href="./" />
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <title>栾媛小工具</title>
+    <script>
+      if (location.search.includes('pluginId=lock-screen-light-off')) {
+        document.documentElement.setAttribute('data-light-off', '1')
+        document.documentElement.style.cssText = 'height:100%;overflow:hidden;background:#000'
+        function styleBody() {
+          if (document.body) document.body.style.cssText = 'margin:0;padding:0;height:100%;overflow:hidden;background:#000'
+          else requestAnimationFrame(styleBody)
+        }
+        styleBody()
+      }
+    </script>
+    <style>
+      html[data-light-off] #app { height: 100%; min-height: 100%; }
+    </style>
   </head>
   <body>
     <div id="app"></div>

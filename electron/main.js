@@ -125,6 +125,10 @@ function createLightOffWindow() {
   }
   const display = screen.getPrimaryDisplay()
   const { width, height, x, y } = display.bounds
+  const pluginsRoot = getExtDir()
+  const lightOffPluginDir = getPluginDirById('lock-screen-light-off') || '锁屏（关灯）'
+  const lightOffHtmlPath = path.join(pluginsRoot, lightOffPluginDir, 'light-off.html')
+
   lightOffWindow = new BrowserWindow({
     width,
     height,
@@ -146,10 +150,6 @@ function createLightOffWindow() {
   lightOffWindow.on('blur', () => {
     if (lightOffWindow && !lightOffWindow.isDestroyed()) lightOffWindow.focus()
   })
-  const lightOffUrl = process.env.VITE_DEV_SERVER_URL
-    ? process.env.VITE_DEV_SERVER_URL + '?pluginId=lock-screen-light-off'
-    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?pluginId=lock-screen-light-off'
-  lightOffWindow.loadURL(lightOffUrl)
   lightOffWindow.on('closed', () => {
     lightOffWindow = null
   })
@@ -157,6 +157,15 @@ function createLightOffWindow() {
     lightOffWindow.setFullScreen(true)
     lightOffWindow.setBounds(display.bounds)
   })
+
+  if (fs.existsSync(lightOffHtmlPath)) {
+    lightOffWindow.loadFile(lightOffHtmlPath)
+  } else {
+    const lightOffUrl = process.env.VITE_DEV_SERVER_URL
+      ? process.env.VITE_DEV_SERVER_URL + '?pluginId=lock-screen-light-off'
+      : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?pluginId=lock-screen-light-off'
+    lightOffWindow.loadURL(lightOffUrl)
+  }
 }
 
 function closeShatterWindow() {
@@ -348,9 +357,14 @@ app.on('activate', () => {
   }
 })
 
-function execPromise(cmd) {
+function execPromise(cmd, opts = {}) {
   return new Promise((resolve) => {
-    exec(cmd, { encoding: 'utf-8', windowsHide: true }, (error, stdout, stderr) => {
+    exec(cmd, {
+      encoding: 'utf-8',
+      windowsHide: true,
+      shell: process.platform === 'win32' ? true : opts.shell,
+      ...opts,
+    }, (error, stdout, stderr) => {
       resolve({ error, stdout: stdout || '', stderr: stderr || '' })
     })
   })
@@ -418,14 +432,31 @@ ipcMain.handle('find-process-by-port', async (_event, port) => {
 })
 
 ipcMain.handle('kill-process', async (_event, pid) => {
+  const pidStr = String(pid).trim()
+  if (!/^\d+$/.test(pidStr)) {
+    return { success: false, message: '无效的进程 ID' }
+  }
+
   const isWin = process.platform === 'win32'
-  const cmd = isWin ? `taskkill /F /PID ${pid} /T` : `kill -9 ${pid}`
+  let cmd
+  if (isWin) {
+    cmd = `taskkill /F /PID ${pidStr} /T`
+  } else {
+    cmd = `kill -9 ${pidStr}`
+  }
 
   const { error, stdout, stderr } = await execPromise(cmd)
   if (error) {
-    return { success: false, message: stderr || error.message }
+    const msg = (stderr || error.message || '').trim()
+    const isAccessDenied = /拒绝访问|Access is denied|Access denied/i.test(msg)
+    return {
+      success: false,
+      message: isAccessDenied
+        ? '权限不足，请右键「以管理员身份运行」本程序后重试'
+        : msg || error.message,
+    }
   }
-  return { success: true, message: stdout || `进程 ${pid} 已终止` }
+  return { success: true, message: stdout || `进程 ${pidStr} 已终止` }
 })
 
 ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
@@ -746,6 +777,12 @@ ipcMain.handle('close-lock-window', () => {
 
 ipcMain.handle('open-light-off-window', () => {
   createLightOffWindow()
+})
+
+ipcMain.handle('get-light-off-url', () => {
+  return process.env.VITE_DEV_SERVER_URL
+    ? process.env.VITE_DEV_SERVER_URL + '?pluginId=lock-screen-light-off'
+    : pathToFileURL(path.join(__dirname, '../dist/index.html')).href + '?pluginId=lock-screen-light-off'
 })
 
 ipcMain.handle('close-light-off-window', () => {

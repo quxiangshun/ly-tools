@@ -6,5 +6,5 @@
   "color": "linear-gradient(135deg, #1a1a1a 0%, #000 100%)",
   "fullScreen": true,
   "version": "1.0.0",
-  "supportedOS": ["win64"]
+  "supportedOS": ["win32", "win64", "windows"]
 }

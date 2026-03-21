@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>关灯</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #000; }
+    .lights-off {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      overflow: hidden;
+    }
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    .face {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      color: rgba(255, 255, 255, 0.92);
+    }
+    .eyes {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 80px;
+    }
+    .eye {
+      width: 140px;
+      height: 100px;
+    }
+    .eye-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .nose-mouth {
+      margin-top: -8px;
+    }
+    .face-svg {
+      width: 80px;
+      height: 50px;
+      display: block;
+    }
+    .drowse-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .drowse-vignette.drowsy {
+      opacity: 0.6;
+      animation: drowse-vignette-pulse 6s ease-in-out infinite;
+    }
+    @keyframes drowse-vignette-pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .drowse-breathe {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: #000;
+      opacity: 0;
+    }
+    .drowse-breathe.drowsy {
+      animation: drowse-breathe 5s ease-in-out infinite;
+    }
+    @keyframes drowse-breathe {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 0.12; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lights-off" id="container">
+    <div class="drowse-vignette" id="vignette"></div>
+    <div class="drowse-breathe" id="breathe"></div>
+    <button class="close-btn" title="退出" id="closeBtn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+    </button>
+    <div class="face">
+      <div class="eyes">
+        <div class="eye">
+          <svg viewBox="-60 -40 120 80" class="eye-svg">
+            <defs>
+              <clipPath id="lid-clip-0">
+                <rect x="-60" y="-40" width="120" id="lid-rect-0" height="0" />
+              </clipPath>
+            </defs>
+            <ellipse class="eye-outline" cx="0" cy="0" rx="50" ry="35" fill="none" stroke="currentColor" stroke-width="3" />
+            <circle id="pupil-0" cx="0" cy="0" r="12" fill="currentColor" />
+            <ellipse cx="0" cy="0" rx="52" ry="38" fill="#000" clip-path="url(#lid-clip-0)" />
+          </svg>
+        </div>
+        <div class="eye">
+          <svg viewBox="-60 -40 120 80" class="eye-svg">
+            <defs>
+              <clipPath id="lid-clip-1">
+                <rect x="-60" y="-40" width="120" id="lid-rect-1" height="0" />
+              </clipPath>
+            </defs>
+            <ellipse class="eye-outline" cx="0" cy="0" rx="50" ry="35" fill="none" stroke="currentColor" stroke-width="3" />
+            <circle id="pupil-1" cx="0" cy="0" r="12" fill="currentColor" />
+            <ellipse cx="0" cy="0" rx="52" ry="38" fill="#000" clip-path="url(#lid-clip-1)" />
+          </svg>
+        </div>
+      </div>
+      <div class="nose-mouth">
+        <svg viewBox="0 0 80 50" class="face-svg">
+          <path class="nose" d="M 40 8 L 38 22 L 40 20 L 42 22 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          <path class="mouth" d="M 20 32 Q 40 42 60 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const EYE_GAP = 110
+      const MAX_OFFSET = 19
+      const PUPIL_LERP = 0.14
+      const IDLE_MS = 1000
+      const VIEWBOX_TOP = -40
+      const CLOSED_Y = 42
+      const HALF_Y = -10.5
+      const CLOSE_DURATION = 2500
+      const CLOSED_HOLD = 1200
+      const OPEN_DURATION = 1800
+
+      const mouse = { x: 0, y: 0 }
+      const pupils = [{ x: 0, y: 0 }, { x: 0, y: 0 }]
+      let isDrowsy = false
+      let idleTimer = null
+      let drowsyStart = 0
+
+      function getPupilTargets() {
+        const leftDx = mouse.x + EYE_GAP
+        const leftDy = mouse.y
+        const rightDx = mouse.x - EYE_GAP
+        const rightDy = mouse.y
+        return [
+          { dx: leftDx, dy: leftDy },
+          { dx: rightDx, dy: rightDy },
+        ].map(function(d) {
+          const dist = Math.sqrt(d.dx * d.dx + d.dy * d.dy) || 1
+          const scale = Math.min(1, MAX_OFFSET / dist)
+          return {
+            x: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.dx * scale)),
+            y: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.dy * scale)),
+          }
+        })
+      }
+
+      function tick(t) {
+        requestAnimationFrame(tick)
+        if (isDrowsy) {
+          pupils[0].x = 0
+          pupils[0].y = MAX_OFFSET
+          pupils[1].x = 0
+          pupils[1].y = MAX_OFFSET
+          const cycle = CLOSE_DURATION + CLOSED_HOLD + OPEN_DURATION
+          const elapsed = (t - drowsyStart) % cycle
+          let y
+          if (elapsed < CLOSE_DURATION) {
+            const p = elapsed / CLOSE_DURATION
+            const ease = 1 - Math.pow(1 - p, 1.5)
+            y = HALF_Y + (CLOSED_Y - HALF_Y) * ease
+          } else if (elapsed < CLOSE_DURATION + CLOSED_HOLD) {
+            y = CLOSED_Y
+          } else {
+            const p = (elapsed - CLOSE_DURATION - CLOSED_HOLD) / OPEN_DURATION
+            const ease = 1 - Math.pow(1 - p, 1.2)
+            y = CLOSED_Y - (CLOSED_Y - HALF_Y) * ease
+          }
+          const lidClipHeight = Math.max(0, y - VIEWBOX_TOP)
+          for (let i = 0; i < 2; i++) {
+            const rect = document.getElementById('lid-rect-' + i)
+            if (rect) rect.setAttribute('height', lidClipHeight)
+          }
+        } else {
+          const targets = getPupilTargets()
+          for (let i = 0; i < 2; i++) {
+            pupils[i].x += (targets[i].x - pupils[i].x) * PUPIL_LERP
+            pupils[i].y += (targets[i].y - pupils[i].y) * PUPIL_LERP
+            const rect = document.getElementById('lid-rect-' + i)
+            if (rect) rect.setAttribute('height', 0)
+          }
+        }
+        for (let i = 0; i < 2; i++) {
+          const el = document.getElementById('pupil-' + i)
+          if (el) {
+            el.setAttribute('cx', pupils[i].x)
+            el.setAttribute('cy', pupils[i].y)
+          }
+        }
+      }
+
+      const container = document.getElementById('container')
+      const vignette = document.getElementById('vignette')
+      const breathe = document.getElementById('breathe')
+
+      container.addEventListener('mousemove', function(e) {
+        if (idleTimer) clearTimeout(idleTimer)
+        isDrowsy = false
+        vignette.classList.remove('drowsy')
+        breathe.classList.remove('drowsy')
+        idleTimer = setTimeout(function() {
+          isDrowsy = true
+          drowsyStart = performance.now()
+          vignette.classList.add('drowsy')
+          breathe.classList.add('drowsy')
+          idleTimer = null
+        }, IDLE_MS)
+        const rect = container.getBoundingClientRect()
+        mouse.x = e.clientX - (rect.left + rect.width / 2)
+        mouse.y = e.clientY - (rect.top + rect.height / 2)
+      })
+
+      idleTimer = setTimeout(function() {
+        isDrowsy = true
+        drowsyStart = performance.now()
+        vignette.classList.add('drowsy')
+        breathe.classList.add('drowsy')
+        idleTimer = null
+      }, IDLE_MS)
+
+      document.getElementById('closeBtn').addEventListener('click', function(e) {
+        e.stopPropagation()
+        exit()
+      })
+
+      function exit() {
+        if (window.electronAPI && typeof window.electronAPI.closeLightOffWindow === 'function') {
+          window.electronAPI.closeLightOffWindow()
+        } else {
+          window.close()
+        }
+      }
+
+      tick(performance.now())
+    })()
+  </script>
+</body>
+</html>

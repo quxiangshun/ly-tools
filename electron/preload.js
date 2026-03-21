@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeLockWindow: () => ipcRenderer.invoke('close-lock-window'),
   openLightOffWindow: () => ipcRenderer.invoke('open-light-off-window'),
   closeLightOffWindow: () => ipcRenderer.invoke('close-light-off-window'),
+  getLightOffUrl: () => ipcRenderer.invoke('get-light-off-url'),
   openShatterWindow: () => ipcRenderer.invoke('open-shatter-window'),
   closeShatterWindow: () => ipcRenderer.invoke('close-shatter-window'),
   getPluginList: () => ipcRenderer.invoke('get-plugin-list'),
