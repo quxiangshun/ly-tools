@@ -141,11 +141,17 @@ defineProps({
   margin: 0 0 4px 0;
   font-weight: 600;
 }
+html.dark .tool-title {
+  color: #e5e7eb;
+}
 
 .tool-version {
   font-size: 10px;
   font-weight: 400;
   color: #909399;
+}
+html.dark .tool-version {
+  color: #8b949e;
 }
 
 .tool-desc {
@@ -158,5 +164,8 @@ defineProps({
   -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+html.dark .tool-desc {
+  color: #8b949e;
 }
 </style>

@@ -285,7 +285,6 @@ function createWindow() {
       mainWindow.hide()
     }
   })
-
 }
 
 if (process.platform === 'win32') {

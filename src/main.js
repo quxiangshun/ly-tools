@@ -6,6 +6,7 @@
 import { createApp, reactive } from 'vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import App from './App.vue'
 import { createAppRouter, defaultPluginsForWeb, getPluginComponentLoader } from './router'
 import { exposePluginHost, loadPluginComponentById } from './plugin-loader'
