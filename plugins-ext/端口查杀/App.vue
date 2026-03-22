@@ -353,4 +353,12 @@ async function killAll() {
   color: #909399;
   font-size: 12px;
 }
+
+/* 跟随主框架深色模式 */
+html.dark .log-item {
+  border-bottom-color: #30363d;
+}
+html.dark .log-time {
+  color: #8b949e;
+}
 </style>

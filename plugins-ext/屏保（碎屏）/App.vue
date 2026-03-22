@@ -57,4 +57,9 @@ function exit() {
 .btn-exit span {
   margin-left: 8px;
 }
+
+/* 跟随主框架深色模式 */
+html.dark .shatter-page {
+  background: #0d1117;
+}
 </style>

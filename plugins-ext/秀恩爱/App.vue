@@ -337,4 +337,21 @@ function heartStyle(i) {
 .next-quote-btn {
   font-size: 13px;
 }
+
+/* 跟随主框架深色模式 */
+html.dark .anniversary-row .label {
+  color: #8b949e;
+}
+html.dark .days-tip {
+  color: #8b949e;
+}
+html.dark .days-future p {
+  color: #8b949e;
+}
+html.dark .quote-card {
+  background: linear-gradient(135deg, #21262d 0%, #161b22 100%);
+}
+html.dark .quote-text {
+  color: #c9d1d9;
+}
 </style>

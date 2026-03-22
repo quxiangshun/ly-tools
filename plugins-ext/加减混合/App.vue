@@ -494,4 +494,12 @@ function doPrint() {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
+
+/* 跟随主框架深色模式 */
+html.dark .section-title {
+  color: #e5e7eb;
+}
+html.dark .q-item {
+  border-bottom-color: #30363d;
+}
 </style>

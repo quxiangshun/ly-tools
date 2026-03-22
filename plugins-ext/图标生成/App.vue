@@ -356,4 +356,15 @@ async function downloadIco() {
 .download-btn {
   width: 100%;
 }
+
+/* 跟随主框架深色模式 */
+html.dark .preview-placeholder {
+  color: #8b949e;
+}
+html.dark .preview-sizes {
+  border-top-color: #30363d;
+}
+html.dark .size-label {
+  color: #8b949e;
+}
 </style>

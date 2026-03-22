@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted, inject, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
@@ -104,6 +104,8 @@ function showAbout() {
     alert('栾媛小工具\n版本 1.0.0\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0')
   }
 }
+
+provide('theme', theme)
 
 let stopNavigate = null
 let stopToggleTheme = null
