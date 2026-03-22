@@ -286,9 +286,6 @@ function createWindow() {
     }
   })
 
-  if (!app.isPackaged && process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.webContents.openDevTools({ mode: 'detach' })
-  }
 }
 
 if (process.platform === 'win32') {
@@ -347,7 +344,56 @@ app.whenReady().then(() => {
   })
   createWindow()
   createTray()
+  setApplicationMenu()
 })
+
+function setApplicationMenu() {
+  const template = [
+    {
+      label: '文件',
+      submenu: [{ label: '退出', role: 'quit' }],
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { label: '撤销', role: 'undo' },
+        { label: '重做', role: 'redo' },
+        { type: 'separator' },
+        { label: '剪切', role: 'cut' },
+        { label: '复制', role: 'copy' },
+        { label: '粘贴', role: 'paste' },
+        { label: '全选', role: 'selectAll' },
+      ],
+    },
+    {
+      label: '视图',
+      submenu: [
+        { label: '重新加载', role: 'reload' },
+        { label: '强制重新加载', role: 'forceReload' },
+        { type: 'separator' },
+        { label: '实际大小', role: 'resetZoom' },
+        { label: '放大', role: 'zoomIn' },
+        { label: '缩小', role: 'zoomOut' },
+        { type: 'separator' },
+        { label: '切换全屏', role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: '窗口',
+      submenu: [
+        { label: '最小化', role: 'minimize' },
+        { label: '最大化', role: 'zoom' },
+        { type: 'separator' },
+        { label: '关闭', role: 'close' },
+      ],
+    },
+    {
+      label: '帮助',
+      submenu: [{ label: '切换开发者工具', role: 'toggleDevTools' }],
+    },
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin' && !tray) app.quit()
@@ -468,13 +514,8 @@ ipcMain.handle('kill-process', async (_event, pid) => {
     result = await execFilePromise('taskkill', ['/F', '/PID', pidStr])
     const msg = (result.stderr || result.error?.message || '').trim()
     const isAccessDenied = /拒绝访问|Access is denied|Access denied/i.test(msg)
-    if (!app.isPackaged) {
-      console.log('[kill-process] 首次尝试 result:', { error: result.error?.message, stderr: result.stderr, isAccessDenied })
-    }
     if (result.error && isAccessDenied) {
-      if (!app.isPackaged) console.log('[kill-process] 权限不足，尝试 UAC 提升...')
       result = await sudoExecPromise(`taskkill /F /PID ${pidStr}`)
-      if (!app.isPackaged) console.log('[kill-process] UAC 结果:', { error: result.error?.message, stderr: result.stderr })
     }
   } else {
     result = await execPromise(`kill -9 ${pidStr}`)
