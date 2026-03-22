@@ -1,9 +1,5 @@
 <template>
   <div class="shatter-page">
-    <header class="shatter-header">
-      <Icon icon="ri:fullscreen-exit-line" :width="22" />
-      <span>屏保（碎屏）</span>
-    </header>
     <div class="shatter-bar">
       <el-button type="primary" size="large" @click="enable" class="btn-enable">
         <Icon icon="ri:play-line" :width="22" />
@@ -39,19 +35,6 @@ function exit() {
   flex-direction: column;
   min-height: 100vh;
   background: #f0f2f5;
-}
-
-.shatter-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
 }
 
 .shatter-bar {

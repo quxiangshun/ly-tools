@@ -77,6 +77,11 @@ const hasNoPlugins = computed(() => {
 })
 
 function onCardClick(item) {
+  const needControlPage = item.showControlPage || item.id === 'screen-saver-shatter'
+  if (needControlPage) {
+    router.push(item.route)
+    return
+  }
   const actions = [item.electronAction, ...(item.electronActions ?? [])].filter(Boolean)
   if (item.fullScreen && actions.length > 0 && electronAPI) {
     const called = actions.filter((a) => typeof electronAPI[a] === 'function')

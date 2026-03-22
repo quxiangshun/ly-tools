@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
   saveFile: (options) => ipcRenderer.invoke('save-file', options),
   getPlatform: () => ipcRenderer.invoke('get-platform'),
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
+  showAbout: () => ipcRenderer.invoke('show-about'),
+  openPluginDoc: () => ipcRenderer.invoke('open-plugin-doc'),
   openLockScreen: () => ipcRenderer.invoke('open-lock-screen'),
   closeLockWindow: () => ipcRenderer.invoke('close-lock-window'),
   openLightOffWindow: () => ipcRenderer.invoke('open-light-off-window'),
@@ -33,5 +38,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_e, path) => cb(path)
     ipcRenderer.on('app-navigate', handler)
     return () => ipcRenderer.removeListener('app-navigate', handler)
+  },
+  onToggleTheme: (cb) => {
+    const handler = (_e, theme) => cb(theme)
+    ipcRenderer.on('app-toggle-theme', handler)
+    return () => ipcRenderer.removeListener('app-toggle-theme', handler)
   },
 })

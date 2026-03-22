@@ -1,9 +1,5 @@
 <template>
   <div class="lobster-page" :class="{ 'lobster-standalone': standalone, 'lobster-controls-only': controlsOnly }">
-    <header v-if="!standalone" class="lobster-header">
-      <Icon icon="ri:restaurant-2-line" :width="22" color="#e74c3c" />
-      <span>养龙虾</span>
-    </header>
     <div v-if="standalone" class="pool" ref="poolRef">
       <div
         v-for="item in lobsters"
@@ -446,20 +442,6 @@ onUnmounted(() => {
 
 .lobster-standalone .float-bar {
   display: none;
-}
-
-.lobster-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #fff;
-  border-bottom: 1px solid #d4e9f0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-  z-index: 5;
 }
 
 .pool {

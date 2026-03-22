@@ -6,6 +6,7 @@
   "description": "桌面碎屏屏保，启用后覆盖在桌面上，仅通过界面退出按钮退出",
   "color": "linear-gradient(135deg, #2c3e50 0%, #34495e 100%)",
   "fullScreen": true,
+  "showControlPage": true,
   "electronAction": "openShatterWindow",
   "version": "1.0.0",
   "supportedOS": ["win64"]

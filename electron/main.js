@@ -265,6 +265,7 @@ function createWindow() {
     height: 700,
     minWidth: 800,
     minHeight: 600,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -630,6 +631,28 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
 })
 
 ipcMain.handle('get-platform', () => process.platform)
+
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize()
+})
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
+  }
+})
+ipcMain.handle('window-close', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close()
+})
+ipcMain.handle('open-plugin-doc', () => openPluginDocWindow())
+
+ipcMain.handle('show-about', () => {
+  dialog.showMessageBox(mainWindow || undefined, {
+    type: 'info',
+    title: '关于栾媛小工具',
+    message: '栾媛小工具',
+    detail: `版本 ${getAppVersion()}\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0`,
+  })
+})
 
 // 插件目录：打包后为 ~/.ly/tools/plugins，开发时为项目 plugins（build:plugins 从 plugins-ext 构建输出到此）
 function getExtDir() {

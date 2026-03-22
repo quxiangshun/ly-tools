@@ -1,10 +1,5 @@
 <template>
   <div class="math-gen">
-    <div class="page-header">
-      <Icon icon="ri:calculator-line" :width="26" color="#667eea" />
-      <h2>加减混合（一年级）</h2>
-    </div>
-
     <el-card shadow="never" class="config-card">
       <template #header>
         <span>出题设置</span>
@@ -420,19 +415,6 @@ function doPrint() {
 <style scoped>
 .math-gen {
   max-width: 900px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 22px;
-  color: #303133;
 }
 
 .config-card {

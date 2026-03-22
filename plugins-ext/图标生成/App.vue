@@ -1,10 +1,5 @@
 <template>
   <div class="icon-generator">
-    <div class="page-header">
-      <Icon icon="ri:palette-fill" :width="26" color="#409eff" />
-      <h2>图标生成</h2>
-    </div>
-
     <div class="gen-layout">
       <el-card shadow="never" class="config-card">
         <template #header>
@@ -256,18 +251,6 @@ async function downloadIco() {
 <style scoped>
 .icon-generator {
   max-width: 960px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
 }
 
 .gen-layout {

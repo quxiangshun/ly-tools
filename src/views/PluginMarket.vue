@@ -1,11 +1,16 @@
 <template>
   <div class="plugin-market">
-    <div class="market-header">
-      <router-link to="/" class="market-back">
-        <Icon icon="ri:arrow-left-line" :width="18" />
-        返回
-      </router-link>
-      <h2 class="market-title">插件市场</h2>
+    <div class="market-top">
+      <el-button
+        v-if="hasElectron"
+        type="primary"
+        plain
+        size="small"
+        @click="openPluginDoc"
+      >
+        <Icon icon="ri:file-text-line" :width="16" style="margin-right: 4px; vertical-align: -2px" />
+        插件开发文档
+      </el-button>
     </div>
     <p class="market-desc">资源来自 <code>http://39.106.39.125:9999/tools/plugins/</code>，安装后会自动热加载，新插件立即可用。若服务器提供 <code>index.json</code>，将显示插件中文名称。</p>
 
@@ -59,6 +64,7 @@
 <script setup>
 import { ref, watch, computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
@@ -93,6 +99,10 @@ async function fetchLocalPlugins() {
   const list = await electronAPI.getPluginList()
   localPlugins.value = Array.isArray(list) ? list : []
   return localPlugins.value
+}
+
+function openPluginDoc() {
+  if (electronAPI?.openPluginDoc) electronAPI.openPluginDoc()
 }
 
 function loadList() {
@@ -159,31 +169,8 @@ watch(
   width: 100%;
 }
 
-.market-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.market-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #606266;
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.market-back:hover {
-  color: #409eff;
-}
-
-.market-title {
-  font-size: 20px;
-  color: #303133;
-  margin: 0;
-  font-weight: 600;
+.market-top {
+  margin-bottom: 12px;
 }
 
 .market-desc {

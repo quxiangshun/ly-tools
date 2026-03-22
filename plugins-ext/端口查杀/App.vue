@@ -1,10 +1,5 @@
 <template>
   <div class="port-killer">
-    <div class="page-header">
-      <Icon icon="ri:terminal-box-fill" :width="26" color="#409eff" />
-      <h2>端口查杀</h2>
-    </div>
-
     <el-card shadow="never" class="search-card">
       <div class="search-row">
         <el-input
@@ -296,18 +291,6 @@ async function killAll() {
 <style scoped>
 .port-killer {
   max-width: 900px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  font-size: 22px;
-  color: #303133;
 }
 
 .search-card {

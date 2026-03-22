@@ -4,11 +4,6 @@
       <span v-for="i in 12" :key="i" class="heart-float" :style="heartStyle(i)">❤</span>
     </div>
 
-    <header class="page-header">
-      <Icon icon="ri:heart-3-fill" :width="28" class="header-icon" />
-      <h1>秀恩爱</h1>
-    </header>
-
     <el-card shadow="never" class="love-card">
       <div class="names-row">
         <el-input
@@ -210,27 +205,6 @@ function heartStyle(i) {
     transform: translateY(-20px) rotate(10deg);
     opacity: 0.25;
   }
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.header-icon {
-  color: #ff6b9d;
-}
-
-.page-header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
 }
 
 .love-card {
