@@ -29,4 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLobsterCrawlDone: (cb) => {
     ipcRenderer.on('lobster-crawl-done', (_e, id) => cb(id))
   },
+  onNavigate: (cb) => {
+    const handler = (_e, path) => cb(path)
+    ipcRenderer.on('app-navigate', handler)
+    return () => ipcRenderer.removeListener('app-navigate', handler)
+  },
 })

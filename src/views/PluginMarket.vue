@@ -1,6 +1,12 @@
 <template>
   <div class="plugin-market">
-    <h2 class="market-title">插件市场</h2>
+    <div class="market-header">
+      <router-link to="/" class="market-back">
+        <Icon icon="ri:arrow-left-line" :width="18" />
+        返回
+      </router-link>
+      <h2 class="market-title">插件市场</h2>
+    </div>
     <p class="market-desc">资源来自 <code>http://39.106.39.125:9999/tools/plugins/</code>，安装后会自动热加载，新插件立即可用。若服务器提供 <code>index.json</code>，将显示插件中文名称。</p>
 
     <template v-if="!hasElectron">
@@ -11,7 +17,9 @@
 
     <template v-else>
       <div v-loading="loading" class="market-list">
-        <el-empty v-if="!loading && list.length === 0" description="暂无插件或加载失败" />
+        <el-empty v-if="!loading && list.length === 0" description="暂无插件或加载失败">
+          <el-button type="primary" @click="loadList">重新加载</el-button>
+        </el-empty>
         <div v-else class="market-grid">
           <el-card
             v-for="item in list"
@@ -49,11 +57,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, inject } from 'vue'
+import { ref, watch, computed, inject } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
+const route = useRoute()
 const electronAPI = inject('electronAPI', {})
-const hasElectron = computed(() => !!electronAPI?.getPluginList)
+const hasElectron = computed(() => !!electronAPI?.getPluginList && !!electronAPI?.getPluginMarketList)
 const refreshPlugins = inject('refreshPlugins', null)
 
 const loading = ref(true)
@@ -86,13 +96,26 @@ async function fetchLocalPlugins() {
 }
 
 function loadList() {
-  if (!electronAPI?.getPluginMarketList) return
+  if (!electronAPI?.getPluginMarketList) {
+    loading.value = false
+    return
+  }
   loading.value = true
   fetchLocalPlugins()
     .then(() => electronAPI.getPluginMarketList())
-    .then(({ success, list: data, message }) => {
-      if (success) list.value = data || []
+    .then((res) => {
+      if (!res) {
+        list.value = []
+        ElMessage.warning('获取列表失败')
+        return
+      }
+      const { success, list: data, message } = res
+      if (success) list.value = Array.isArray(data) ? data : []
       else ElMessage.warning(message || '获取列表失败')
+    })
+    .catch((err) => {
+      list.value = []
+      ElMessage.warning(err?.message || '获取列表失败')
     })
     .finally(() => {
       loading.value = false
@@ -119,10 +142,16 @@ function install(item) {
     })
 }
 
-onMounted(() => {
-  if (hasElectron.value) loadList()
-  else loading.value = false
-})
+watch(
+  () => route.path,
+  (path) => {
+    if (path === '/plugin-market') {
+      if (hasElectron.value) loadList()
+      else loading.value = false
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -130,10 +159,30 @@ onMounted(() => {
   width: 100%;
 }
 
+.market-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.market-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #606266;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.market-back:hover {
+  color: #409eff;
+}
+
 .market-title {
   font-size: 20px;
   color: #303133;
-  margin: 0 0 8px 0;
+  margin: 0;
   font-weight: 600;
 }
 

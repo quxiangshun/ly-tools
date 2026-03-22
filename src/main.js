@@ -63,11 +63,15 @@ if (standalonePluginId) {
   const pluginState = reactive({ list: [] })
 
   async function refreshPlugins() {
-    const list = window.electronAPI
-      ? await window.electronAPI.getPluginList()
-      : defaultPluginsForWeb
-    const oldIds = new Set(pluginState.list.map((p) => p.id))
-    const newIds = new Set(list.map((p) => p.id))
+    let list = defaultPluginsForWeb
+    try {
+      if (window.electronAPI?.getPluginList) {
+        const res = await window.electronAPI.getPluginList()
+        list = Array.isArray(res) ? res : defaultPluginsForWeb
+      }
+    } catch (_) {}
+    const oldIds = new Set((pluginState.list || []).map((p) => p.id))
+    const newIds = new Set((list || []).map((p) => p.id))
     pluginState.list = list
     const router = window.__LY_TOOLS_ROUTER__
     if (router) {

@@ -1,6 +1,7 @@
 import { h } from 'vue'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import Home from '../views/Home.vue'
+import PluginMarket from '../views/PluginMarket.vue'
 import { loadPluginComponent } from '../plugin-loader'
 
 function errorPlaceholder(msg) {
@@ -19,9 +20,9 @@ const defaultPluginsForWeb = []
 export function buildRoutes(pluginList) {
   const routes = [
     { path: '/', name: 'Home', component: Home },
-    { path: '/plugin-market', name: 'PluginMarket', component: () => import('../views/PluginMarket.vue') },
-    ...pluginList
-      .filter((p) => p.pluginDir)
+    { path: '/plugin-market', name: 'PluginMarket', component: PluginMarket },
+    ...(pluginList || [])
+      .filter((p) => p && p.pluginDir && p.route && p.id)
       .map((p) => ({
         path: p.route,
         name: p.id,

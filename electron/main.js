@@ -3,7 +3,7 @@
  * Copyright (C) 2025 屈想顺
  * Licensed under AGPL-3.0
  */
-const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu, protocol } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, screen, Tray, Menu, protocol, shell } = require('electron')
 const { exec, execFile } = require('child_process')
 const sudo = require('@vscode/sudo-prompt')
 const path = require('path')
@@ -347,8 +347,72 @@ app.whenReady().then(() => {
   setApplicationMenu()
 })
 
+let pluginDocWindow = null
+
+function openPluginDocWindow() {
+  const docPath = path.join(app.getAppPath(), 'docs', '插件开发.md')
+  if (!fs.existsSync(docPath)) {
+    dialog.showMessageBox({ type: 'info', title: '插件开发文档', message: '文档文件不存在，请从项目 docs 目录查看。' })
+    return
+  }
+  if (pluginDocWindow && !pluginDocWindow.isDestroyed()) {
+    pluginDocWindow.focus()
+    return
+  }
+  const mdContent = fs.readFileSync(docPath, 'utf-8').replace(/\r\n/g, '\n')
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>插件开发文档</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;line-height:1.7;color:#333}
+h1,h2,h3,h4{margin-top:1.5em;margin-bottom:.5em;font-weight:600}h1{font-size:1.6em;border-bottom:1px solid #eee;padding-bottom:.3em}
+h2{font-size:1.3em}h3{font-size:1.1em}
+code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:.9em}
+pre{background:#f5f5f5;padding:16px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre code{background:0;padding:0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ddd;padding:10px 12px;text-align:left}
+th{background:#f8f8f8;font-weight:600}
+blockquote{border-left:4px solid #409eff;margin:1em 0;padding-left:16px;color:#666}
+ul,ol{padding-left:1.5em}a{color:#409eff;text-decoration:none}a:hover{text-decoration:underline}
+</style>
+</head>
+<body><div id="content">加载中...</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>`
+  pluginDocWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    title: '插件开发文档',
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  })
+  pluginDocWindow.setMenuBarVisibility(false)
+  pluginDocWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+  pluginDocWindow.webContents.on('did-finish-load', () => {
+    const js = `(function(){var md=${JSON.stringify(mdContent)};function r(){if(typeof marked!=="undefined"){document.getElementById("content").innerHTML=marked.parse(md);}else{setTimeout(r,30);}}r();})();`
+    pluginDocWindow.webContents.executeJavaScript(js)
+  })
+  pluginDocWindow.on('closed', () => { pluginDocWindow = null })
+}
+
 function setApplicationMenu() {
+  const openPluginMarket = () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.webContents.send('app-navigate', '/plugin-market')
+    }
+  }
   const template = [
+    {
+      label: '插件市场',
+      submenu: [
+        { label: '插件市场', click: openPluginMarket },
+      ],
+    },
     {
       label: '文件',
       submenu: [{ label: '退出', role: 'quit' }],
@@ -389,7 +453,25 @@ function setApplicationMenu() {
     },
     {
       label: '帮助',
-      submenu: [{ label: '切换开发者工具', role: 'toggleDevTools' }],
+      submenu: [
+        {
+          label: '插件开发文档',
+          click: () => openPluginDocWindow(),
+        },
+        {
+          label: '关于',
+          click: () => {
+            dialog.showMessageBox({
+              type: 'info',
+              title: '关于栾媛小工具',
+              message: '栾媛小工具',
+              detail: `版本 ${getAppVersion()}\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0`,
+            })
+          },
+        },
+        { type: 'separator' },
+        { label: '切换开发者工具', role: 'toggleDevTools' },
+      ],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
