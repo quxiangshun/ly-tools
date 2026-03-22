@@ -77,25 +77,13 @@ const hasNoPlugins = computed(() => {
 })
 
 function onCardClick(item) {
-  if (item.fullScreen && item.id === 'lock-screen') {
-    if (electronAPI?.openLockScreen) {
-      electronAPI.openLockScreen()
-    } else {
-      router.push(item.route)
+  const actions = [item.electronAction, ...(item.electronActions ?? [])].filter(Boolean)
+  if (item.fullScreen && actions.length > 0 && electronAPI) {
+    const called = actions.filter((a) => typeof electronAPI[a] === 'function')
+    if (called.length > 0) {
+      called.forEach((fn) => electronAPI[fn]())
+      return
     }
-    return
-  }
-  if (item.fullScreen && item.id === 'lock-screen-light-off') {
-    if (electronAPI?.openLightOffWindow) {
-      electronAPI.openLightOffWindow()
-    } else {
-      router.push(item.route)
-    }
-    return
-  }
-  if (item.fullScreen && item.id === 'screen-saver-shatter') {
-    router.push(item.route)
-    return
   }
   router.push(item.route)
 }
