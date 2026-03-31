@@ -57,7 +57,9 @@
       </div>
     </header>
     <main class="app-main">
-      <router-view />
+      <div class="app-main-body">
+        <router-view />
+      </div>
     </main>
     <footer class="app-footer">
       © 2025 屈想顺 · <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
@@ -81,7 +83,9 @@ const pageTitle = computed(() => {
   if (route.path === '/plugin-market') return '插件市场'
   const list = pluginList?.list ?? pluginList
   const arr = Array.isArray(list) ? list : []
-  const p = arr.find((item) => item.route === route.path)
+  const p =
+    arr.find((item) => item.route === route.path) ||
+    arr.find((item) => item.id === route.name)
   return p?.title ?? ''
 })
 const theme = ref(localStorage.getItem('ly-tools-theme') || 'light')
@@ -104,7 +108,7 @@ function showAbout() {
   if (electronAPI?.showAbout) {
     electronAPI.showAbout()
   } else {
-    alert('栾媛小工具\n版本 1.0.0\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0')
+    alert('栾媛小工具\n版本 1.2.0\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0')
   }
 }
 
@@ -258,12 +262,31 @@ html.dark .app-page-title {
 
 .app-main {
   flex: 1;
+  min-height: 0;
   padding: 16px;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #f0f2f5;
 }
 html.dark .app-main {
   background: #0d1117;
+}
+
+/* 主框架不滚动；滚动发生在各页面/插件根节点内部，避免与插件内滚动条叠加 */
+.app-main-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main-body > * {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .app-footer {

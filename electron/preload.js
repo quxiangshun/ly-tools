@@ -9,6 +9,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   plugin: {
     invokeMain: (pluginId, script, method, args) =>
       ipcRenderer.invoke('invoke-plugin-main', { pluginId, script, method, args }),
+    /** 主进程脚本通过 invoke-plugin-main 推送的日志行（需先订阅再 invokeMain） */
+    onMainLog: (cb) => {
+      const handler = (_e, payload) => cb(payload)
+      ipcRenderer.on('invoke-plugin-main-log', handler)
+      return () => ipcRenderer.removeListener('invoke-plugin-main-log', handler)
+    },
   },
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),

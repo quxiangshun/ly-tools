@@ -120,6 +120,7 @@ async function onUninstall(item) {
 <style scoped>
 .home {
   width: 100%;
+  box-sizing: border-box;
 }
 
 .search-bar {

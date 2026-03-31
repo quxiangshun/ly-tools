@@ -1,4 +1,4 @@
-# 栾媛小工具 v1.1
+# 栾媛小工具 v1.2.0
 
 Copyright (C) 2025 屈想顺. Licensed under [AGPL-3.0](LICENSE).
 

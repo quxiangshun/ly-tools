@@ -167,6 +167,7 @@ watch(
 <style scoped>
 .plugin-market {
   width: 100%;
+  box-sizing: border-box;
 }
 
 .market-top {

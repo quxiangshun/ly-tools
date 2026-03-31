@@ -664,6 +664,17 @@ function getExtDir() {
   return extDir
 }
 
+/** manifest.title 或目录名被误存成 %E6%95%B0%E6... 时解码为可读中文 */
+function decodePluginDisplayName(str) {
+  if (typeof str !== 'string' || !str) return str
+  if (!/%[0-9A-Fa-f]{2}/.test(str)) return str
+  try {
+    return decodeURIComponent(str)
+  } catch {
+    return str
+  }
+}
+
 // 将 URL 编码的插件目录名迁移为解码后的中文名，避免 Vite 请求 404
 function migrateEncodedPluginDirs() {
   const pluginsRoot = getExtDir()
@@ -711,15 +722,18 @@ function getPluginList() {
             .replace(/^macos?$/, 'darwin')
         )
         if (!normalized.includes(platform)) continue
-        const displayTitle =
-          manifest.title ??
-          (() => {
-            try {
-              return decodeURIComponent(pluginDir)
-            } catch {
-              return pluginDir
-            }
-          })()
+        const titleFromManifest =
+          manifest.title != null && String(manifest.title).trim() !== ''
+            ? String(manifest.title)
+            : null
+        const titleFromDir = (() => {
+          try {
+            return decodeURIComponent(pluginDir)
+          } catch {
+            return pluginDir
+          }
+        })()
+        const displayTitle = decodePluginDisplayName(titleFromManifest ?? titleFromDir)
         list.push({ pluginDir, ...manifest, title: displayTitle })
       } catch (_) {}
     }
@@ -752,7 +766,7 @@ function sanitizePluginMethodName(method) {
   return s
 }
 
-ipcMain.handle('invoke-plugin-main', async (_event, { pluginId, script, method, args }) => {
+ipcMain.handle('invoke-plugin-main', async (event, { pluginId, script, method, args }) => {
   try {
     const pluginsRoot = getExtDir()
     const pluginDir = getPluginDirById(pluginId)
@@ -780,12 +794,25 @@ ipcMain.handle('invoke-plugin-main', async (_event, { pluginId, script, method, 
     const requireEntry = fs.existsSync(pkgPath) ? pkgPath : modPath
     const pluginRequire = createRequire(requireEntry)
     const absScript = path.resolve(modPath)
+    // 清除该脚本在 require 缓存中的条目，避免更新 db-sync.js 等方法后仍沿用旧 module.exports（须重启才能看到新方法）
+    try {
+      const resolved = pluginRequire.resolve(absScript)
+      if (require.cache[resolved]) delete require.cache[resolved]
+    } catch (_) {}
     const mod = pluginRequire(absScript)
     const fn = mod[safeMethod]
     if (typeof fn !== 'function') {
       return { success: false, message: `脚本未提供方法: ${safeMethod}` }
     }
-    return await fn(args)
+    const log = (line) => {
+      try {
+        const wc = event.sender
+        if (wc && !wc.isDestroyed()) {
+          wc.send('invoke-plugin-main-log', { line: String(line), ts: Date.now() })
+        }
+      } catch (_) {}
+    }
+    return await fn(args, log)
   } catch (e) {
     return { success: false, message: e?.message || String(e) }
   }
@@ -881,7 +908,13 @@ function parseZipLinksFromHtml(html, titleMap = {}) {
   const seen = new Set()
   while ((m = re.exec(html)) !== null) {
     const raw = m[1].trim()
-    const filename = raw.split('/').pop().replace(/%20/g, ' ')
+    const lastSeg = raw.split('/').pop()
+    let filename = lastSeg
+    try {
+      filename = decodeURIComponent(lastSeg)
+    } catch (_) {
+      filename = lastSeg.replace(/%20/g, ' ')
+    }
     if (!filename.endsWith('.zip') || seen.has(filename)) continue
     seen.add(filename)
     const name = filename.replace(/\.zip$/i, '')
