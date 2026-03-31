@@ -1,0 +1,11 @@
+{
+  "id": "markdown-reader",
+  "route": "/markdown-reader",
+  "title": "Markdown 阅读",
+  "icon": "ri:markdown-line",
+  "description": "打开本地 .md 文件阅读，多标签、最近 20 条记录与上次会话记忆",
+  "color": "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+  "version": "1.0.6",
+  "minLyToolsVersion": "1.2.1",
+  "supportedOS": ["win64", "linux", "darwin"]
+}

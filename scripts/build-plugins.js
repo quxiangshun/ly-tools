@@ -70,6 +70,9 @@ async function buildOne(dir) {
   const excludeNames = new Set(['App.vue', 'style.css', 'node_modules', '.git', '.DS_Store'])
   copyDirExcluding(srcDir, outDir, (name) => excludeNames.has(name))
 
+  // 1b. 若插件声明了 dependencies，先在源码目录安装，供 Vite 解析（如 marked 等打进 UMD）
+  npmInstallPluginDepsForVite(srcDir, dir)
+
   // 2. 构建 App.vue -> App.js（及 style.css）
   const entry = path.join(srcDir, 'App.vue')
   await build({
@@ -100,6 +103,30 @@ async function buildOne(dir) {
   })
   npmInstallPluginDeps(outDir)
   console.log(`  ✓ ${dir}/`)
+}
+
+/** 在插件源码目录安装 dependencies，供 Vite 打包进 App.js（与输出目录 node_modules 无关） */
+function npmInstallPluginDepsForVite(srcDir, name) {
+  const pkg = path.join(srcDir, 'package.json')
+  if (!fs.existsSync(pkg)) return
+  let deps = {}
+  try {
+    const meta = JSON.parse(fs.readFileSync(pkg, 'utf-8'))
+    deps = meta.dependencies || {}
+  } catch (_) {
+    return
+  }
+  if (typeof deps !== 'object' || Object.keys(deps).length === 0) return
+  console.log(`  npm install（插件依赖，Vite 构建）: ${name} ...`)
+  try {
+    execSync('npm install --omit=dev', {
+      cwd: srcDir,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    })
+  } catch (e) {
+    console.warn(`  警告: 源码目录 npm install 失败（${name}）:`, e?.message || e)
+  }
 }
 
 /** 若插件 package.json 声明了 dependencies，在输出目录安装（供主进程 createRequire；无依赖则不执行 npm，减轻对构建的影响） */

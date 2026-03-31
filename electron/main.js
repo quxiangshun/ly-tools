@@ -631,6 +631,91 @@ ipcMain.handle('save-file', async (_event, { defaultName, data, filters }) => {
   return { success: false }
 })
 
+const MAX_READ_TEXT_FILE_BYTES = 20 * 1024 * 1024
+
+function normalizeUserFilePath(filePath) {
+  if (typeof filePath !== 'string') return null
+  const t = filePath.trim()
+  if (!t) return null
+  try {
+    return path.resolve(t)
+  } catch {
+    return null
+  }
+}
+
+ipcMain.handle('open-file-dialog', async (_event, options = {}) => {
+  const multi = Boolean(options.multiSelections)
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: typeof options.title === 'string' ? options.title : '打开文件',
+    properties: multi ? ['openFile', 'multiSelections'] : ['openFile'],
+    filters: Array.isArray(options.filters) && options.filters.length
+      ? options.filters
+      : [
+          { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd'] },
+          { name: '所有文件', extensions: ['*'] },
+        ],
+  })
+  return { canceled: result.canceled, filePaths: result.filePaths || [] }
+})
+
+ipcMain.handle('read-text-file', async (_event, filePath) => {
+  const abs = normalizeUserFilePath(filePath)
+  if (!abs) return { ok: false, error: '无效路径' }
+  try {
+    if (!fs.existsSync(abs)) return { ok: false, error: '文件不存在' }
+    const stat = fs.statSync(abs)
+    if (!stat.isFile()) return { ok: false, error: '不是文件' }
+    if (stat.size > MAX_READ_TEXT_FILE_BYTES) return { ok: false, error: '文件过大（超过 20MB）' }
+    const content = fs.readFileSync(abs, 'utf-8')
+    return { ok: true, path: abs, content }
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) }
+  }
+})
+
+/** 按传入顺序返回仍存在的文件绝对路径（用于恢复标签/历史时剔除已删除文件） */
+ipcMain.handle('filter-existing-files', async (_event, paths) => {
+  if (!Array.isArray(paths)) return []
+  const out = []
+  for (const p of paths) {
+    const abs = normalizeUserFilePath(p)
+    if (!abs) continue
+    try {
+      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) out.push(abs)
+    } catch (_) {}
+  }
+  return out
+})
+
+const MD_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd'])
+
+/** 列出目录下 Markdown 文件（非递归），用于 Markdown 阅读侧栏 */
+ipcMain.handle('list-markdown-in-dir', async (_event, dirPath) => {
+  const abs = normalizeUserFilePath(dirPath)
+  if (!abs) return { ok: false, error: '无效路径' }
+  try {
+    if (!fs.existsSync(abs)) return { ok: false, error: '目录不存在' }
+    const stat = fs.statSync(abs)
+    if (!stat.isDirectory()) return { ok: false, error: '不是目录' }
+    const entries = fs.readdirSync(abs, { withFileTypes: true })
+    const files = []
+    for (const e of entries) {
+      if (!e.isFile()) continue
+      const ext = path.extname(e.name).toLowerCase()
+      if (!MD_EXTENSIONS.has(ext)) continue
+      files.push({
+        path: path.join(abs, e.name),
+        name: e.name,
+      })
+    }
+    files.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+    return { ok: true, dir: abs, files }
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) }
+  }
+})
+
 ipcMain.handle('get-platform', () => process.platform)
 
 ipcMain.handle('window-minimize', () => {

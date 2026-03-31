@@ -1,0 +1,9 @@
+{
+  "name": "ly-plugin-markdown-reader",
+  "version": "1.0.6",
+  "private": true,
+  "description": "Markdown 阅读器（marked 渲染，依赖主进程读文件）",
+  "dependencies": {
+    "marked": "^15.0.0"
+  }
+}

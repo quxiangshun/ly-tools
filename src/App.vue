@@ -108,7 +108,7 @@ function showAbout() {
   if (electronAPI?.showAbout) {
     electronAPI.showAbout()
   } else {
-    alert('栾媛小工具\n版本 1.2.0\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0')
+    alert('栾媛小工具\n版本 1.2.1\n\nCopyright (C) 2025 屈想顺\nLicensed under AGPL-3.0')
   }
 }
 

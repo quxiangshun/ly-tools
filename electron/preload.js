@@ -4,6 +4,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   findProcessByPort: (port) => ipcRenderer.invoke('find-process-by-port', port),
   killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
   saveFile: (options) => ipcRenderer.invoke('save-file', options),
+  /** 打开文件对话框（Markdown 阅读等）；options: { title?, multiSelections?, filters? } */
+  openFileDialog: (options) => ipcRenderer.invoke('open-file-dialog', options),
+  /** 以 UTF-8 读取本地文本文件；返回 { ok, path?, content?, error? } */
+  readTextFile: (filePath) => ipcRenderer.invoke('read-text-file', filePath),
+  /** 过滤已删除路径，返回仍存在的绝对路径（顺序与传入一致） */
+  filterExistingFiles: (paths) => ipcRenderer.invoke('filter-existing-files', paths),
+  /** 列出目录内 Markdown 文件（非递归）；返回 { ok, dir?, files: [{ path, name }], error? } */
+  listMarkdownInDir: (dirPath) => ipcRenderer.invoke('list-markdown-in-dir', dirPath),
   getPlatform: () => ipcRenderer.invoke('get-platform'),
   /** 插件相关能力单独命名空间，避免与内置 API 平铺混淆；新增带主进程脚本的插件无需再改 preload */
   plugin: {

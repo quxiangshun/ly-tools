@@ -6,6 +6,32 @@
 
 ---
 
+## [1.2.1] - 2026-03-31
+
+### 主程序
+
+- **版本**：`package.json` 版本号 **1.2.1**（相对 1.2.0 的功能与文档发布）。
+- **文件 API（供插件使用）**：主进程 IPC `open-file-dialog`（可选多选）、`read-text-file`（UTF-8，单文件最大 20MB）、`filter-existing-files`（按顺序过滤仍存在的路径）、`list-markdown-in-dir`（列出目录内 Markdown，非递归）。预加载已暴露为 `electronAPI.openFileDialog` / `readTextFile` / `filterExistingFiles` / `listMarkdownInDir`。
+- **插件构建**：`scripts/build-plugins.js` 在编译前于插件源码目录执行依赖安装（供 Vite 解析如 `marked` 等），输出目录仍按需执行 `npm install` 以生成随 zip 分发的 `node_modules`。
+- **文档**：
+  - `docs/插件开发.md`：增补 **`electronAPI` 完整列表（§5.1）**、**IPC 通道与 API 对应（§5.2）**，章节编号顺延；补充「Markdown 阅读」与「数据库同步」开发说明交叉引用。
+  - `README.md`、`docs/技术文档.md`：增加插件文档与 `preload` 说明的引用，便于二次开发检索。
+
+### Markdown 阅读插件（v1.0.6）
+
+- **依赖主程序**：`minLyToolsVersion` **1.2.1**（依赖上述文件类 IPC）。
+- **新建插件**：随仓库提供 `plugins-ext/Markdown阅读/`，含 `manifest.json`、`App.vue`、`package.json`（依赖 **marked**）及 **`开发说明.md`**（从零构建、发布与常见问题）。
+- **阅读与编辑**：打开本地 `.md` / `.markdown` 等，**marked** 渲染为 HTML；**多标签**；编辑内容仅内存，不自动写回磁盘。
+- **最近打开**：最多 **20** 条；支持在列表中**单条移除**；打开新文件时写入（去重、新文件在前）。
+- **会话记忆**：关闭应用后恢复标签与选中项；启动时用 `filter-existingFiles` 剔除已删除文件。
+- **文档目录（TOC）**：从 `#`～`######` 生成侧栏目录；侧栏可收起。仅编辑模式下点目录会先切到预览再定位；左右/上下分栏下点目录会**同时**滚动编辑区源码与预览锚点。
+- **视图**：**预览** / **编辑** / **左右** / **上下**；与侧栏状态持久化到 `localStorage`。
+- **搜索**：关键词、上一个/下一个、**Enter** 下一处、可选**区分大小写**；预览区命中高亮，当前匹配醒目并滚入视口；编辑/分栏下同步选中源码。
+- **界面**：搜索与「视图」**同一行**（短搜索框在预览等选项前）；编辑区与预览区**滚动条样式**与细条宽度一致（约 3px）。
+- **分发**：执行 `npm run build:plugins -- Markdown阅读` 生成 `plugins/Markdown阅读/` 与 **`Markdown阅读.zip`**。
+
+---
+
 ## [1.2.0] - 2026-03-31
 
 ### 主程序
