@@ -1,9 +1,11 @@
 {
   "pnpm": {
-    "onlyBuiltDependencies": ["electron"]
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
   },
   "name": "ly-tools",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "实用小工具集 - 端口查杀 & 图标生成",
   "author": "屈想顺",
   "license": "AGPL-3.0",

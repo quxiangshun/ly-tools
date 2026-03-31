@@ -7,3 +7,4 @@ release/
 *.log
 
 plugins/
+plugins-ext/**/node_modules/

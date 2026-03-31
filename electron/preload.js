@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
   saveFile: (options) => ipcRenderer.invoke('save-file', options),
   getPlatform: () => ipcRenderer.invoke('get-platform'),
+  /** 插件相关能力单独命名空间，避免与内置 API 平铺混淆；新增带主进程脚本的插件无需再改 preload */
+  plugin: {
+    invokeMain: (pluginId, script, method, args) =>
+      ipcRenderer.invoke('invoke-plugin-main', { pluginId, script, method, args }),
+  },
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
   windowClose: () => ipcRenderer.invoke('window-close'),

@@ -1,0 +1,11 @@
+{
+  "id": "db-sync",
+  "route": "/db-sync",
+  "title": "数据库同步",
+  "icon": "ri:database-2-line",
+  "description": "将所填源数据库 A 同步到目标数据库 B（同类型；覆盖 B 中与 A 对应的内容）",
+  "color": "linear-gradient(135deg, #0f766e 0%, #155e75 100%)",
+  "version": "1.0.0",
+  "minLyToolsVersion": "1.1.0",
+  "supportedOS": ["win64", "linux", "darwin"]
+}

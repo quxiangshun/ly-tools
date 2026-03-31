@@ -1,4 +1,4 @@
-# 栾媛小工具 v1.0
+# 栾媛小工具 v1.1
 
 Copyright (C) 2025 屈想顺. Licensed under [AGPL-3.0](LICENSE).
 
@@ -41,6 +41,12 @@ Copyright (C) 2025 屈想顺. Licensed under [AGPL-3.0](LICENSE).
 npm install
 npm run dev
 ```
+
+### 插件与主进程扩展
+
+- 插件界面为 `plugins-ext/<插件名>/App.vue`，构建后由 `ly-plugin://` 加载。
+- 若需在**主进程**跑 Node 能力（读写本地库、文件、调用第三方包），使用 **`electronAPI.plugin.invokeMain`**，脚本与 **`package.json` 依赖放在插件目录内**，不增加主程序专用 IPC。  
+- 可支撑的应用方向举例见 **[docs/插件开发.md](docs/插件开发.md) §5.3**；**「数据库同步」** 插件见 `plugins-ext/数据库同步/开发说明.md`。
 
 ## 构建
 

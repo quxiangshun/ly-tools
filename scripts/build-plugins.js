@@ -12,6 +12,7 @@
  */
 const path = require('path')
 const fs = require('fs')
+const { execSync } = require('child_process')
 const { build } = require('vite')
 const vue = require('@vitejs/plugin-vue')
 const AdmZip = require('adm-zip')
@@ -97,7 +98,35 @@ async function buildOne(dir) {
       },
     },
   })
+  npmInstallPluginDeps(outDir)
   console.log(`  ✓ ${dir}/`)
+}
+
+/** 若插件 package.json 声明了 dependencies，在输出目录安装（供主进程 createRequire；无依赖则不执行 npm，减轻对构建的影响） */
+function npmInstallPluginDeps(outDir) {
+  const pkg = path.join(outDir, 'package.json')
+  if (!fs.existsSync(pkg)) return
+  let deps = {}
+  try {
+    const meta = JSON.parse(fs.readFileSync(pkg, 'utf-8'))
+    deps = meta.dependencies || {}
+  } catch (_) {
+    return
+  }
+  if (typeof deps !== 'object' || Object.keys(deps).length === 0) return
+  const name = path.basename(outDir)
+  console.log(`  npm install（插件依赖）: ${name} ...`)
+  try {
+    execSync('npm install --omit=dev', {
+      cwd: outDir,
+      stdio: 'inherit',
+      env: process.env,
+      windowsHide: true,
+    })
+  } catch (e) {
+    console.error(`  插件 ${name} 的 npm install 失败，请检查 package.json 与网络`)
+    throw e
+  }
 }
 
 function zipPlugin(dir) {

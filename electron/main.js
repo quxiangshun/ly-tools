@@ -12,6 +12,7 @@ const os = require('os')
 const http = require('http')
 const https = require('https')
 const { pathToFileURL } = require('url')
+const { createRequire } = require('module')
 
 const PLUGIN_MARKET_BASE = 'http://39.106.39.125:9999/tools/plugins/'
 
@@ -731,6 +732,64 @@ function getPluginDirById(pluginId) {
   const found = list.find((p) => p.id === pluginId)
   return found ? found.pluginDir : null
 }
+
+/**
+ * 通用插件主进程脚本调用：从插件目录加载指定 .js，调用其暴露的方法（业务逻辑仅在插件目录内）。
+ * 参数：pluginId（manifest.id）、script（如 helper 或 helper.js）、method、args
+ */
+function sanitizePluginScriptFileName(script) {
+  let name = String(script || 'main').trim()
+  if (!name.endsWith('.js')) name = `${name}.js`
+  if (!/^[a-zA-Z0-9._-]+\.js$/.test(name)) return null
+  return name
+}
+
+/** 防止异常 method 名访问 Object 原型链 */
+function sanitizePluginMethodName(method) {
+  const s = String(method || '').trim()
+  if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(s)) return null
+  if (s === 'constructor' || s === '__proto__' || s === 'prototype') return null
+  return s
+}
+
+ipcMain.handle('invoke-plugin-main', async (_event, { pluginId, script, method, args }) => {
+  try {
+    const pluginsRoot = getExtDir()
+    const pluginDir = getPluginDirById(pluginId)
+    if (!pluginDir) {
+      return { success: false, message: '未找到插件或当前系统不支持该插件' }
+    }
+    const safeMethod = sanitizePluginMethodName(method)
+    if (!safeMethod) {
+      return { success: false, message: '非法的方法名' }
+    }
+    const fileName = sanitizePluginScriptFileName(script)
+    if (!fileName) {
+      return { success: false, message: '非法的脚本文件名' }
+    }
+    const modPath = path.resolve(path.join(pluginsRoot, pluginDir, fileName))
+    const pluginRoot = path.resolve(path.join(pluginsRoot, pluginDir))
+    const relToPlugin = path.relative(pluginRoot, modPath)
+    if (!relToPlugin || relToPlugin.startsWith('..') || path.isAbsolute(relToPlugin)) {
+      return { success: false, message: '路径非法' }
+    }
+    if (!fs.existsSync(modPath)) {
+      return { success: false, message: `插件中不存在脚本 ${fileName}（请先执行 npm run build:plugins）` }
+    }
+    const pkgPath = path.join(pluginRoot, 'package.json')
+    const requireEntry = fs.existsSync(pkgPath) ? pkgPath : modPath
+    const pluginRequire = createRequire(requireEntry)
+    const absScript = path.resolve(modPath)
+    const mod = pluginRequire(absScript)
+    const fn = mod[safeMethod]
+    if (typeof fn !== 'function') {
+      return { success: false, message: `脚本未提供方法: ${safeMethod}` }
+    }
+    return await fn(args)
+  } catch (e) {
+    return { success: false, message: e?.message || String(e) }
+  }
+})
 
 ipcMain.handle('get-plugin-list', () => getPluginList())
 
