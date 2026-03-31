@@ -2,7 +2,10 @@
   <div class="app-wrap">
     <header class="app-header">
       <div class="app-header-left">
-        <template v-if="!isHome">
+        <template v-if="isHome">
+          <span class="app-brand-title">栾媛小工具</span>
+        </template>
+        <template v-else>
           <router-link to="/" class="back-home">
             <Icon icon="ri:arrow-left-line" :width="14" />
             返回
@@ -232,6 +235,16 @@ html.dark .back-home {
 html.dark .back-home:hover {
   background: #21262d;
   color: #58a6ff;
+}
+
+.app-brand-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  letter-spacing: 0.02em;
+}
+html.dark .app-brand-title {
+  color: #e5e7eb;
 }
 
 .app-page-title {
