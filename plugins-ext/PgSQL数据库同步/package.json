@@ -1,0 +1,9 @@
+{
+  "name": "ly-plugin-pgsql-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PostgreSQL pg_dump/pg_restore 同步（主进程脚本 + pg）",
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "json-formatter",
+  "route": "/json-formatter",
+  "title": "JSON 格式化",
+  "icon": "ri:braces-line",
+  "description": "粘贴 JSON 自动格式化，支持压缩、复制和缩进设置",
+  "color": "linear-gradient(135deg, #2b5876 0%, #4e4376 100%)",
+  "version": "1.0.0",
+  "minLyToolsVersion": "1.2.0",
+  "supportedOS": ["win64", "linux", "darwin"]
+}

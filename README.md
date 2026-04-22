@@ -19,6 +19,8 @@ Copyright (C) 2025 屈想顺. Licensed under [AGPL-3.0](LICENSE).
 | **锁屏（win更新）** | Windows 更新风格假锁屏 |
 | **屏保（碎屏）** | 桌面碎屏屏保，覆盖在桌面上展示 |
 | **Markdown 阅读** | 打开本地 Markdown 文件阅读，多标签、最近 20 条与会话记忆（需插件市场或本地构建安装） |
+| **PgSQL 备份恢复** | 调用本机 pg_dump/pg_restore 做 PostgreSQL 自定义格式备份与恢复，含版本检测（适合 NetBox；需本地构建或市场安装） |
+| **JSON 格式化** | 粘贴 JSON 自动格式化，支持压缩、复制与缩进设置 |
 
 ### 端口查杀（详情）
 - 输入端口号查询占用进程
@@ -47,7 +49,7 @@ npm run dev
 
 - 插件界面为 `plugins-ext/<插件名>/App.vue`，构建后由 `ly-plugin://` 加载。
 - 若需在**主进程**跑 Node 能力（读写本地库、文件、调用第三方包），使用 **`electronAPI.plugin.invokeMain`**，脚本与 **`package.json` 依赖放在插件目录内**，不增加主程序专用 IPC。  
-- 可支撑的应用方向举例见 **[docs/插件开发.md](docs/插件开发.md) §5.3**；**「数据库同步」** 见 `plugins-ext/数据库同步/开发说明.md`；**「Markdown 阅读」**（仅渲染进程文件 API）见 `plugins-ext/Markdown阅读/开发说明.md`。
+- 可支撑的应用方向举例见 **[docs/插件开发.md](docs/插件开发.md) §5.3**；**「数据库同步」** 见 `plugins-ext/数据库同步/开发说明.md`；**「Markdown 阅读」**（仅渲染进程文件 API）见 `plugins-ext/Markdown阅读/开发说明.md`；**「PgSQL 备份恢复」**（pg_dump / invokeMain）见 `plugins-ext/PgSQL数据库同步/开发说明.md`。
 
 ## 构建
 

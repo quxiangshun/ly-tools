@@ -30,6 +30,14 @@
 - **界面**：搜索与「视图」**同一行**（短搜索框在预览等选项前）；编辑区与预览区**滚动条样式**与细条宽度一致（约 3px）。
 - **分发**：执行 `npm run build:plugins -- Markdown阅读` 生成 `plugins/Markdown阅读/` 与 **`Markdown阅读.zip`**。
 
+### PgSQL 备份恢复插件（v1.0.0）
+
+- **新建插件**（`id`: `pgsql-sync`）：在桌面版中调用本机 **`pg_dump` / `pg_restore` / `psql`**，以 **`-Fc`** 导出、**`--clean --if-exists`** 导入，适合 **NetBox** 等需完整逻辑备份的场景（与「数据库同步」逐表 INSERT 不同）。
+- **版本检测**：连接源/目标库读取服务器主版本，对比本机 `pg_dump` 主版本；若客户端低于源库主版本，提示可能 **`server version mismatch`**；源与目标主版本不一致时提示跨版本风险。
+- **操作**：导出 dump、导入恢复、校验 `django_migrations`、删除本地 dump；主进程脚本 **`pg-sync-main.js`** + 依赖 **`pg`**。
+- **文档**：`plugins-ext/PgSQL数据库同步/开发说明.md`；与命令行细节对照见 **`plugins-ext/数据库同步/NetBox与PostgreSQL完整同步.md`**。
+- **构建**：`npm run build:plugins -- PgSQL数据库同步` → **`PgSQL数据库同步.zip`**。
+
 ---
 
 ## [1.2.0] - 2026-03-31
